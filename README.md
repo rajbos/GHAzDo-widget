@@ -10,3 +10,9 @@ Extension for Azure DevOps that shows the number of open security alerts for the
   - show the total number of alerts for the project
   - show only a single number instead of all three (or add a checkbox for each alert type so users can mix and match)
 - Add chart with the number of alerts over time (1 line for active and maybe a line for closed?)
+
+
+## How to build the package
+
+* `npm install`
+* `npm run package`

@@ -1,8 +1,9 @@
 {
   "scripts": {
     "build-not-working": "tsc -p .",
-    "package": "tfx extension create",
-    "publish": "go to https://marketplace.visualstudio.com/manage and publish manually"
+    "package": "tfx extension create --manifest-globs vss-extension-dev.json --rev-version",
+    "publish": "tfx extension create",
+    "publish-explain": "go to https://marketplace.visualstudio.com/manage and publish manually"
   },
   "dependencies": {},
   "devDependencies": {
