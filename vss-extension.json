@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "GHAzDoWidget",
-    "version": "0.0.1.0",
+    "version": "0.0.1.1",
     "public": false,
     "name": "Advanced Security dashboard Widgets",
     "description": "GitHub Advanced Security for Azure DevOps dashboard widgets",
