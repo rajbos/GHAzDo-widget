@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+    <html xmlns="http://www.w3.org/1999/xhtml">
+        <head>
+            <script src="lib/VSS.SDK.min.js"></script>
+
+            <script type="text/javascript">
+                VSS.init({                        
+                    explicitNotifyLoaded: true,
+                    usePlatformStyles: true
+                });
+        
+                VSS.require(["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient"],
+                  function (Service, WidgetHelpers, context, GitWebApi) {
+                    VSS.register("GHAzDoWidget.Configuration", function () {   
+                        var $repoDropdown = $("#repo-dropdown"); 
+        
+                        async function getRepos() {
+                            try {
+                                const webContext = VSS.getWebContext();
+                                const project = webContext.project;
+
+                                // todo: load the available repos in this project
+                                const gitClient = Service.getClient(GitWebApi.GitHttpClient);
+                                repos = await gitClient.getRepositories(project.name);
+                                console.log(`Found these repos: ${JSON.stringify(repos)}`);
+                                return repos;
+                            }
+                            catch (err) {
+                                console.log(`Error loading the available repos: ${err}`);
+                                return [];
+                            }
+                        }
+
+                        return {
+                            load: async function (widgetSettings, widgetConfigurationContext) {
+                                var settings = JSON.parse(widgetSettings.customSettings.data);
+                                console.log(`Loading the settings with ${JSON.stringify(settings)}`)
+
+                                const repos = await getRepos();
+                                // add all repos as selection options to the dropdown
+                                if (repos) {
+                                    // sort the repo alphabetically
+                                    repos.sort((a, b) => a.name.localeCompare(b.name));
+                                    repos.forEach(r => {
+                                        $repoDropdown.append(`<option value=${r.name}>${r.name}</option>`);
+                                    });
+                                }
+                                
+                                if (settings && settings.repo) {
+                                    // select the repo that was saved in the settings
+                                     $repoDropdown.val(settings.repo);
+                                 }
+
+                                 $repoDropdown.on("change", function () {
+                                    let repo;
+                                    if (repos) {                                        
+                                        // find the repo with this name
+                                        repo = repos.find(r => r.name === $repoDropdown.val());
+                                    }
+
+                                    var customSettings = {
+                                        data: JSON.stringify({
+                                                repo: $repoDropdown.val(),
+                                                repoId: repo.id
+                                            })
+                                    };
+                                    var eventName = WidgetHelpers.WidgetEvent.ConfigurationChange;
+                                    var eventArgs = WidgetHelpers.WidgetEvent.Args(customSettings);
+                                    widgetConfigurationContext.notify(eventName, eventArgs);
+                                });
+        
+                                return WidgetHelpers.WidgetStatusHelper.Success();
+                            },
+                            onSave: async function() {
+                                const repos = await getRepos();
+                                let repo;
+                                if (repos) {
+                                    // find the repo with this name
+                                    repo = repos.find(r => r.name === $repoDropdown.val());
+                                }
+                                var customSettings = {
+                                    data: JSON.stringify({
+                                            repo: $repoDropdown.val(),
+                                            repoId: repo.id
+                                        })
+                                };
+                                console.log(`Saving the settings with ${JSON.stringify(customSettings)}`)
+                                return WidgetHelpers.WidgetConfigurationSave.Valid(customSettings); 
+                            }
+                        }
+                    });
+                    VSS.notifyLoadSucceeded();
+                });
+            </script>
+        </head>
+        <body>
+            <div class="container">
+                <fieldset>
+                    <label class="label">Repository: </label>
+                    <select id="repo-dropdown" style="margin-top:10px">
+                        <!-- todo: dynamically load the available repos in this project-->                        
+                    </select>
+                </fieldset>             
+            </div>
+        </body>
+    </html>

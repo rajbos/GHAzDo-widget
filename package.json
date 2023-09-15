@@ -1,7 +1,8 @@
 {
   "scripts": {
     "build-not-working": "tsc -p .",
-    "package": "tfx extension create"
+    "package": "tfx extension create",
+    "publish": "go to https://marketplace.visualstudio.com/manage and publish manually"
   },
   "dependencies": {},
   "devDependencies": {
