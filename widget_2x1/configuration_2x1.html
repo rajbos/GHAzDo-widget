@@ -1,19 +1,19 @@
 <!DOCTYPE html>
     <html xmlns="http://www.w3.org/1999/xhtml">
         <head>
-            <script src="lib/VSS.SDK.min.js"></script>
+            <script src="../lib/VSS.SDK.min.js"></script>
 
             <script type="text/javascript">
-                VSS.init({                        
+                VSS.init({
                     explicitNotifyLoaded: true,
                     usePlatformStyles: true
                 });
-        
+
                 VSS.require(["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient"],
                   function (Service, WidgetHelpers, context, GitWebApi) {
-                    VSS.register("GHAzDoWidget.Configuration", function () {   
-                        var $repoDropdown = $("#repo-dropdown"); 
-        
+                    VSS.register("GHAzDoWidget.Configuration", function () {
+                        var $repoDropdown = $("#repo-dropdown");
+
                         async function getRepos() {
                             try {
                                 const webContext = VSS.getWebContext();
@@ -34,7 +34,7 @@
                         return {
                             load: async function (widgetSettings, widgetConfigurationContext) {
                                 var settings = JSON.parse(widgetSettings.customSettings.data);
-                                console.log(`Loading the settings with ${JSON.stringify(settings)}`)
+                                console.log(`Loading the 2x1 settings with ${JSON.stringify(settings)}`)
 
                                 const repos = await getRepos();
                                 // add all repos as selection options to the dropdown
@@ -45,7 +45,7 @@
                                         $repoDropdown.append(`<option value=${r.name}>${r.name}</option>`);
                                     });
                                 }
-                                
+
                                 if (settings && settings.repo) {
                                     // select the repo that was saved in the settings
                                      $repoDropdown.val(settings.repo);
@@ -53,7 +53,7 @@
 
                                  $repoDropdown.on("change", function () {
                                     let repo;
-                                    if (repos) {                                        
+                                    if (repos) {
                                         // find the repo with this name
                                         repo = repos.find(r => r.name === $repoDropdown.val());
                                     }
@@ -68,7 +68,7 @@
                                     var eventArgs = WidgetHelpers.WidgetEvent.Args(customSettings);
                                     widgetConfigurationContext.notify(eventName, eventArgs);
                                 });
-        
+
                                 return WidgetHelpers.WidgetStatusHelper.Success();
                             },
                             onSave: async function() {
@@ -85,7 +85,7 @@
                                         })
                                 };
                                 console.log(`Saving the settings with ${JSON.stringify(customSettings)}`)
-                                return WidgetHelpers.WidgetConfigurationSave.Valid(customSettings); 
+                                return WidgetHelpers.WidgetConfigurationSave.Valid(customSettings);
                             }
                         }
                     });
@@ -98,9 +98,9 @@
                 <fieldset>
                     <label class="label">Repository: </label>
                     <select id="repo-dropdown" style="margin-top:10px">
-                        <!-- todo: dynamically load the available repos in this project-->                        
+                        <!-- todo: dynamically load the available repos in this project-->
                     </select>
-                </fieldset>             
+                </fieldset>
             </div>
         </body>
     </html>
