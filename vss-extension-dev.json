@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "GHAzDoWidget-DEV",
-    "version": "0.0.1.0",
+    "version": "0.0.1.34",
     "public": false,
     "name": "Advanced Security dashboard Widgets [DEV]",
     "description": "[DEV] GitHub Advanced Security for Azure DevOps dashboard widgets",
@@ -46,14 +46,14 @@
             "type": "ms.vss-dashboards-web.widget",
             "targets": [
                 "ms.vss-dashboards-web.widget-catalog",
-                "RobBos.GHAzDoWidget.GHAzDoWidget.Configuration"
+                "RobBos.GHAzDoWidget-DEV.GHAzDoWidget.Configuration"
             ],
             "properties": {
-                "name": "Advanced Security alert information",
-                "description": "Display the amount of active security alerts from GitHub Advanced Security",
+                "name": "[DEV] GHAzDO alert information",
+                "description": "[DEV] Display the amount of active security alerts from GitHub Advanced Security",
                 "catalogIconUrl": "img/publogo.png",
-                "previewImageUrl": "img/preview.png",                            
-                "uri": "widget_2_by_1.html",
+                "previewImageUrl": "img/preview.png",
+                "uri": "widget_2x1/widget_2x1.html",
                 "supportedSizes": [
                      {
                             "rowSpan": 1,
@@ -70,16 +70,48 @@
             "properties": {
                 "name": "GHAzDoWidget Configuration",
                 "description": "Configures GHAzDoWidget",
-                "uri": "configuration.html"
+                "uri": "widget_2x1/configuration_2x1.html"
+            }
+        },
+        {
+            "id": "GHAzDoWidget.1x1",
+            "type": "ms.vss-dashboards-web.widget",
+            "targets": [
+                "ms.vss-dashboards-web.widget-catalog",
+                "RobBos.GHAzDoWidget-DEV.GHAzDoWidget.Configuration_1x1"
+            ],
+            "properties": {
+                "name": "[DEV] GHAzDO single alert type information",
+                "description": "[DEV] Display the amount of active security alerts from GitHub Advanced Security for a single type of alert",
+                "catalogIconUrl": "img/publogo.png",
+                "previewImageUrl": "img/preview.png",
+                "uri": "widget_1x1/widget_1x1.html",
+                "supportedSizes": [
+                     {
+                            "rowSpan": 1,
+                            "columnSpan": 1
+                        }
+                    ],
+                "supportedScopes": ["project_team"]
+            }
+        },
+        {
+            "id": "GHAzDoWidget.Configuration_1x1",
+            "type": "ms.vss-dashboards-web.widget-configuration",
+            "targets": [ "ms.vss-dashboards-web.widget-configuration" ],
+            "properties": {
+                "name": "GHAzDoWidget Configuration",
+                "description": "Configures GHAzDoWidget",
+                "uri": "widget_1x1/configuration_1x1.html"
             }
         }
     ],
     "files": [
         {
-            "path": "widget_2_by_1.html", "addressable": true
+            "path": "widget_1x1", "addressable": true
         },
         {
-            "path": "configuration.html", "addressable": true
+            "path": "widget_2x1", "addressable": true
         },
         {
             "path": "library.js", "addressable": true

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+    <html xmlns="http://www.w3.org/1999/xhtml">
+        <head>
+            <script src="../lib/VSS.SDK.min.js"></script>
+
+            <script type="text/javascript">
+                VSS.init({
+                    explicitNotifyLoaded: true,
+                    usePlatformStyles: true
+                });
+
+                VSS.require(["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient"],
+                  function (Service, WidgetHelpers, context, GitWebApi) {
+                    VSS.register("GHAzDoWidget.Configuration_1x1", function () {
+                        var $repoDropdown = $("#repo-dropdown");
+                        var $repoAlertType = $("#repo-alert-type");
+
+                        async function getRepos() {
+                            try {
+                                const webContext = VSS.getWebContext();
+                                const project = webContext.project;
+
+                                // todo: load the available repos in this project
+                                const gitClient = Service.getClient(GitWebApi.GitHttpClient);
+                                repos = await gitClient.getRepositories(project.name);
+                                console.log(`Found these repos: ${JSON.stringify(repos)}`);
+                                return repos;
+                            }
+                            catch (err) {
+                                console.log(`Error loading the available repos: ${err}`);
+                                return [];
+                            }
+                        }
+
+                        function reloadWidget(widgetConfigurationContext) {
+                            let repo;
+                            if (repos) {
+                                // find the repo with this name
+                                repo = repos.find(r => r.name === $repoDropdown.val());
+                            }
+
+                            var customSettings = {
+                                data: JSON.stringify({
+                                        repo: $repoDropdown.val(),
+                                        repoId: repo.id,
+                                        repoAlertType: $repoAlertType.val()
+                                    })
+                            };
+                            var eventName = WidgetHelpers.WidgetEvent.ConfigurationChange;
+                            var eventArgs = WidgetHelpers.WidgetEvent.Args(customSettings);
+                            widgetConfigurationContext.notify(eventName, eventArgs);
+                        }
+
+                        return {
+                            load: async function (widgetSettings, widgetConfigurationContext) {
+                                var settings = JSON.parse(widgetSettings.customSettings.data);
+                                console.log(`Loading the 1x1 settings with ${JSON.stringify(settings)}`)
+
+                                const repos = await getRepos();
+                                // add all repos as selection options to the dropdown
+                                if (repos) {
+                                    // sort the repo alphabetically
+                                    repos.sort((a, b) => a.name.localeCompare(b.name));
+                                    repos.forEach(r => {
+                                        $repoDropdown.append(`<option value=${r.name}>${r.name}</option>`);
+                                    });
+                                }
+
+                                if (settings && settings.repo) {
+                                    // select the repo that was saved in the settings
+                                     $repoDropdown.val(settings.repo);
+                                }
+
+                                if (settings && settings.repoAlertType) {
+                                    // select the alert type that was saved in the settings
+                                     $repoAlertType.val(settings.repoAlertType);
+                                }
+
+                                // register a change event handler for the dropdowns
+                                $repoDropdown.on("change", function () {
+                                    reloadWidget(widgetConfigurationContext)
+                                });
+
+                                $repoAlertType.on("change", function () {
+                                    reloadWidget(widgetConfigurationContext)
+                                });
+
+                                return WidgetHelpers.WidgetStatusHelper.Success();
+                            },
+                            onSave: async function() {
+                                const repos = await getRepos();
+                                let repo;
+                                if (repos) {
+                                    // find the repo with this name
+                                    repo = repos.find(r => r.name === $repoDropdown.val());
+                                }
+                                var customSettings = {
+                                    data: JSON.stringify({
+                                            repo: $repoDropdown.val(),
+                                            repoId: repo.id,
+                                            repoAlertType: $repoAlertType.val()
+                                        })
+                                };
+                                console.log(`Saving the 1x1 settings with ${JSON.stringify(customSettings)}`)
+                                return WidgetHelpers.WidgetConfigurationSave.Valid(customSettings);
+                            }
+                        }
+                    });
+                    VSS.notifyLoadSucceeded();
+                });
+            </script>
+        </head>
+        <body>
+            <style>
+                .dropdown {
+                    margin-top: 10px;
+                    min-width: 150px;
+                }
+            </style>
+            <div class="container">
+                <table>
+                    <tr>
+                        <td>
+                            <label class="label">Repository: </label>
+                        </td>
+                        <td>
+                            <select id="repo-dropdown" class="dropdown"></select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label class="label">Alert type to show: </label>
+                        </td>
+                        <td>
+                            <select id="repo-alert-type" class="dropdown">
+                                <option value="1">Dependency alerts</option>
+                                <option value="2">Secret scanning alerts</option>
+                                <option value="3">Code scanning alerts</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </body>
+    </html>
