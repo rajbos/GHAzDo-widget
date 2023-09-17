@@ -2,6 +2,7 @@
 <html>
 <head>
     <script src="../lib/VSS.SDK.min.js"></script>
+    <script src="../library.js"></script>
     <link rel="stylesheet" href="../styles.css" />
 </head>
 <body>
@@ -12,35 +13,102 @@
             });
 
         VSS.require([
-                "TFS/Dashboards/WidgetHelpers",
-                "Charts/Services"
+                    "TFS/Dashboards/WidgetHelpers",
+                    "Charts/Services",
+                    "VSS/Context",
+                    "VSS/Authentication/Services"
                 ],
-                function (WidgetHelpers, Services) {
+                function (WidgetHelpers, Services, context) {
                 WidgetHelpers.IncludeWidgetStyles();
                 VSS.register("GHAzDoWidget.Chart", function () {
                     return {
-                    load:function() {
-                        return Services.ChartsService.getService().then(function(chartService){
+                    load: async function(widgetSettings) {
+                        return Services.ChartsService.getService().then(async function(chartService){
+                            consoleLog("Starting to create chart");
                             var $container = $('#Chart-Container');
+                            var $title = $('h2.title');
+
+                            const webContext = VSS.getWebContext();
+                            const project = webContext.project;
+                            const organization = webContext.account.name;
+                            const projectId = project.id;
+                            // convert project.name to url encoding
+                            const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26");
+
+                            consoleLog('project id: ' + projectId);
+                            consoleLog('project name: ' + projectName);
+                            consoleLog('organization name: ' + organization);
+
+                            consoleLog(`WidgetSettings inside loadChartWidget_2x2: ${JSON.stringify(widgetSettings)}`);
+
+                            // data contains a stringified json object, so we need to make a json object from it
+                            const data = JSON.parse(widgetSettings.customSettings.data);
+
+                            let repoName
+                            let repoId
+                            if (data && data.repo) {
+                                repoName = data.repo;
+                                repoId = data.repoId;
+                                consoleLog('loaded repoName from widgetSettings: ' + repoName);
+
+                                $title.text(`Advanced Security Alerts Trend`)
+                                $container.text(`${data.repo}`)
+
+                                // load the alerts for the selected repo
+                                try {
+                                    alerts = await getAlerts(organization, projectName, repoId);
+                                    consoleLog('alerts: ' +  JSON.stringify(alerts));
+                                }
+                                catch (err) {
+                                    consoleLog(`Error loading the grouped alerts: ${err}`);
+                                }
+                            }
+                            else {
+                                consoleLog('configuration is needed first, opening with empty values');
+                                // set the tile to indicate config is needed
+                                $title.text(`Configure the widget to get Advanced Security alerts trend information`);
+                            }
+
+                            try {
+                                // get the trend data for alerts first
+                                const secretAlertTrend = getAlertsTrend(organization, projectName, repoId)
+                                consoleLog('alertTrend: ' +  JSON.stringify(secretAlertTrend));
+                            }
+                            catch (err) {
+                                consoleLog(`Error loading the alerts trend: ${err}`);
+                            }
                             var chartOptions = {
                                 "hostOptions": {
                                     "height": "290",
                                     "width": "300"
                                 },
-                                "chartType": "pie",
-                                "series": [{
-                                    "data": [11, 4, 3, 1]
-                                }],
-                                "xAxis": {
-                                    "labelValues": ["Design", "On Deck", "Completed", "Development"]
-                                },
+                                "chartType": "line",
+                                "series":
+                                [
+                                    {
+                                        "name": "Design",
+                                        "data": [1,3,4,3,6,1,9,0,8,11]
+                                    },
+                                    {
+                                        "name": "On Deck",
+                                        "data": [2,4,5,6,7,8,9,10,11,12]
+                                    },
+                                    {
+                                        "name": "secrets",
+                                        "data": secretAlertTrend
+                                    }
+                                ],
                                 "specializedOptions": {
-                                    "showLabels": "true",
-                                    "size": 200
+                                    "includeMarkers": "true"
                                 }
                             };
 
-                            chartService.createChart($container, chartOptions);
+                            try {
+                                chartService.createChart($container, chartOptions);
+                            }
+                            catch (err) {
+                                console.log(`Error creating chart: ${err}`);
+                            }
                             return WidgetHelpers.WidgetStatusHelper.Success();
                         });
                         }
@@ -48,6 +116,10 @@
                     });
             VSS.notifyLoadSucceeded();
         });
+
+        function consoleLog(message) {
+                console.log(message);
+            }
     </script>
 
     <div class="widget">

@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "GHAzDoWidget-DEV",
-    "version": "0.0.1.36",
+    "version": "0.0.1.49",
     "public": false,
     "name": "Advanced Security dashboard Widgets [DEV]",
     "description": "[DEV] GitHub Advanced Security for Azure DevOps dashboard widgets",
@@ -106,14 +106,15 @@
             }
         },
         {
-            "id": "[DEV] GHAzDoWidget.Chart",
+            "id": "GHAzDoWidget.Chart",
             "type": "ms.vss-dashboards-web.widget",
             "targets": [
-                "ms.vss-dashboards-web.widget-catalog"
+                "ms.vss-dashboards-web.widget-catalog",
+                "RobBos.GHAzDoWidget-DEV.GHAzDoWidget.Chart.Configuration"
             ],
             "properties": {
-                "name": "GHAzDoWidget - Sample Chart",
-                "description": "A simple chart widget with no configuration and hard-coded data.",
+                "name": "[DEV] GHAzDoWidget - Sample Chart",
+                "description": "[DEV] A trend chart widget for Advanced Security alerts.",
                 "catalogIconUrl": "img/publogo.png",
                 "uri": "/chart/chart.html",
                 "supportedSizes": [
@@ -125,6 +126,16 @@
                 "supportedScopes": [
                     "project_team"
                 ]
+            }
+        },
+        {
+            "id": "GHAzDoWidget.Chart.Configuration",
+            "type": "ms.vss-dashboards-web.widget-configuration",
+            "targets": [ "ms.vss-dashboards-web.widget-configuration" ],
+            "properties": {
+                "name": "GHAzDoWidget Chart Configuration",
+                "description": "Configures GHAzDoWidget.Chart",
+                "uri": "chart/configuration_2x2.html"
             }
         }
     ],
