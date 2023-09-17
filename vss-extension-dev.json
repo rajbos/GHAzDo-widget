@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "GHAzDoWidget-DEV",
-    "version": "0.0.1.34",
+    "version": "0.0.1.35",
     "public": false,
     "name": "Advanced Security dashboard Widgets [DEV]",
     "description": "[DEV] GitHub Advanced Security for Azure DevOps dashboard widgets",
@@ -115,6 +115,9 @@
         },
         {
             "path": "library.js", "addressable": true
+        },
+        {
+            "path": "styles.css", "addressable": true
         },
         {
             "path": "sdk/scripts", "addressable": true
