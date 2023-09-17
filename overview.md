@@ -10,6 +10,9 @@ Install from the marketplace: https://marketplace.visualstudio.com/items?itemNam
 ### Split it into three separate widgets (1 by 1) with just the single value you scan for:
 ![Screenshot of the widget in 1 by 1 showing the repository name and the alert count for dependencies, secrets, and code scanning](/img/example_1x1.png)
 
+### Show a trend line (2 by 2) of all alerts in the last 3 weeks:
+![Screenshot of the chart widget in 2 by 2 showing the repository name and the alert count for dependencies, secrets, and code scanning](/img/example_chart_2x2.png)
+
 ## GitHub repo
 Please report issues, feature request, and feedback here: https://github.com/rajbos/GHAzDo-widget.
 
