@@ -17,21 +17,16 @@
                 {
                     WidgetHelpers.IncludeWidgetStyles();
                     VSS.register("GHAzDoWidget.1x1", function () {
-                        try {
-                            const webContext = VSS.getWebContext();
-                            const project = webContext.project;
-                            const organization = webContext.account.name;
-                            const projectId = project.id;
-                            // convert project.name to url encoding
-                            const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26");
+                        const webContext = VSS.getWebContext();
+                        const project = webContext.project;
+                        const organization = webContext.account.name;
+                        const projectId = project.id;
+                        // convert project.name to url encoding
+                        const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26");
 
-                            consoleLog('project id: ' + projectId);
-                            consoleLog('project name: ' + projectName);
-                            consoleLog('organization name: ' + organization);
-                        }
-                        catch (err) {
-                            consoleLog(`Error getting the web context: ${err}`);
-                        }
+                        consoleLog('project id: ' + projectId);
+                        consoleLog('project name: ' + projectName);
+                        consoleLog('organization name: ' + organization);
 
                         async function loadWidget(widgetSettings) {
                             consoleLog(`WidgetSettings inside loadWidget_1x1: ${JSON.stringify(widgetSettings)}`);
