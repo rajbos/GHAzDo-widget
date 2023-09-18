@@ -48,7 +48,7 @@
                                 consoleLog('loaded repoName from widgetSettings: ' + repoName);
 
                                 // set the tile
-                                var title = $('h2.title');
+                                var title = $('h2.ghazdo-title');
                                 title.text(`Security Alerts for ${repoName}`);
                                 alerts = await getAlerts(organization, projectName, repoId);
                                 consoleLog('alerts: ' +  JSON.stringify(alerts));
@@ -108,7 +108,7 @@
     </head>
     <body>
         <div class="widget GHAzDo-widget">
-            <h2 class="title">GitHub Advanced Security Alerts</h2>
+            <h2 class="ghazdo-title">GitHub Advanced Security Alerts</h2>
             <div id="query-info-container" class="column-container">
 
                 <a class="link bolt-link dependency-link" target="_parent" href="">
