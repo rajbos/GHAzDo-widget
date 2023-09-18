@@ -2,6 +2,7 @@
     <html xmlns="http://www.w3.org/1999/xhtml">
         <head>
             <script src="../lib/VSS.SDK.min.js"></script>
+            <script src="../library.js"></script>
             <link rel="stylesheet" href="../styles.css" />
 
             <script type="text/javascript">
@@ -15,29 +16,12 @@
                     VSS.register("GHAzDoWidget.Configuration", function () {
                         var $repoDropdown = $("#repo-dropdown");
 
-                        async function getRepos() {
-                            try {
-                                const webContext = VSS.getWebContext();
-                                const project = webContext.project;
-
-                                // todo: load the available repos in this project
-                                const gitClient = Service.getClient(GitWebApi.GitHttpClient);
-                                repos = await gitClient.getRepositories(project.name);
-                                console.log(`Found these repos: ${JSON.stringify(repos)}`);
-                                return repos;
-                            }
-                            catch (err) {
-                                console.log(`Error loading the available repos: ${err}`);
-                                return [];
-                            }
-                        }
-
                         return {
                             load: async function (widgetSettings, widgetConfigurationContext) {
                                 var settings = JSON.parse(widgetSettings.customSettings.data);
                                 console.log(`Loading the 2x1 settings with ${JSON.stringify(settings)}`)
 
-                                const repos = await getRepos();
+                                const repos = await getRepos(VSS, Service, GitWebApi);
                                 // add all repos as selection options to the dropdown
                                 if (repos) {
                                     // add a top option to select no repo
@@ -75,7 +59,7 @@
                                 return WidgetHelpers.WidgetStatusHelper.Success();
                             },
                             onSave: async function() {
-                                const repos = await getRepos();
+                                const repos = await getRepos(VSS, Service, GitWebApi);
                                 let repo;
                                 if (repos) {
                                     // find the repo with this name

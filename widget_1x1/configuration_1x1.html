@@ -16,23 +16,6 @@
                         var $repoDropdown = $("#repo-dropdown");
                         var $repoAlertType = $("#repo-alert-type");
 
-                        async function getRepos() {
-                            try {
-                                const webContext = VSS.getWebContext();
-                                const project = webContext.project;
-
-                                // todo: load the available repos in this project
-                                const gitClient = Service.getClient(GitWebApi.GitHttpClient);
-                                repos = await gitClient.getRepositories(project.name);
-                                console.log(`Found these repos: ${JSON.stringify(repos)}`);
-                                return repos;
-                            }
-                            catch (err) {
-                                console.log(`Error loading the available repos: ${err}`);
-                                return [];
-                            }
-                        }
-
                         function reloadWidget(widgetConfigurationContext) {
                             let repo;
                             if (repos) {
@@ -57,7 +40,7 @@
                                 var settings = JSON.parse(widgetSettings.customSettings.data);
                                 console.log(`Loading the 1x1 settings with ${JSON.stringify(settings)}`)
 
-                                const repos = await getRepos();
+                                const repos = await getRepos(VSS, Service, GitWebApi);
                                 // add all repos as selection options to the dropdown
                                 if (repos) {
                                     // add a top option to select no repo
@@ -91,7 +74,7 @@
                                 return WidgetHelpers.WidgetStatusHelper.Success();
                             },
                             onSave: async function() {
-                                const repos = await getRepos();
+                                const repos = await getRepos(VSS, Service, GitWebApi);
                                 let repo;
                                 if (repos) {
                                     // find the repo with this name

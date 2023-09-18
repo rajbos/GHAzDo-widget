@@ -146,3 +146,20 @@ function getDatePoints() {
 function consoleLog(message) {
     console.log(message);
 }
+
+async function getRepos(VSS, Service, GitWebApi) {
+    try {
+        const webContext = VSS.getWebContext();
+        const project = webContext.project;
+
+        // todo: load the available repos in this project
+        const gitClient = Service.getClient(GitWebApi.GitHttpClient);
+        repos = await gitClient.getRepositories(project.name);
+        console.log(`Found these repos: ${JSON.stringify(repos)}`);
+        return repos;
+    }
+    catch (err) {
+        console.log(`Error loading the available repos: ${err}`);
+        return [];
+    }
+}
