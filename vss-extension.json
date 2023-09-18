@@ -14,7 +14,7 @@
       ],
     "targets": [
         {
-            "id": "Microsoft.VisualStudio.Services"
+            "id": "Microsoft.VisualStudio.Services.Cloud"
         }
     ],
     "tags": [
@@ -154,9 +154,6 @@
         },
         {
             "path": "styles.css", "addressable": true
-        },
-        {
-            "path": "sdk/scripts", "addressable": true
         },
         {
             "path": "img", "addressable": true

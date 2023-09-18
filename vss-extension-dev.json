@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "GHAzDoWidget-DEV",
-    "version": "0.0.1.73",
+    "version": "0.0.1.84",
     "public": false,
     "name": "Advanced Security dashboard Widgets [DEV]",
     "description": "[DEV] GitHub Advanced Security for Azure DevOps dashboard widgets",
@@ -14,7 +14,7 @@
       ],
     "targets": [
         {
-            "id": "Microsoft.VisualStudio.Services"
+            "id": "Microsoft.VisualStudio.Services.Cloud"
         }
     ],
     "tags": [
@@ -113,7 +113,7 @@
                 "RobBos.GHAzDoWidget-DEV.GHAzDoWidget.Chart.Configuration"
             ],
             "properties": {
-                "name": "[DEV] GHAzDoWidget - Sample Chart",
+                "name": "[DEV] GHAzDoWidget - Chart",
                 "description": "[DEV] A trend chart widget for Advanced Security alerts.",
                 "catalogIconUrl": "img/publogo.png",
                 "uri": "/chart/chart.html",
@@ -154,9 +154,6 @@
         },
         {
             "path": "styles.css", "addressable": true
-        },
-        {
-            "path": "sdk/scripts", "addressable": true
         },
         {
             "path": "img", "addressable": true

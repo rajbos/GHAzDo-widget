@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - run: |
+          npm install
+          npm install -g tfx-cli
+
+      - name:  Create extension
+        run: tfx extension create --manifest-globs vss-extension-dev.json --rev-version
+      #- run: npm run test
