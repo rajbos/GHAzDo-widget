@@ -40,6 +40,8 @@
                                 const repos = await getRepos();
                                 // add all repos as selection options to the dropdown
                                 if (repos) {
+                                    // add a top option to select no repo
+                                    $repoDropdown.append(`<option value="">Select a repository</option>`);
                                     // sort the repo alphabetically
                                     repos.sort((a, b) => a.name.localeCompare(b.name));
                                     repos.forEach(r => {
