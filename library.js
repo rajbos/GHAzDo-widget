@@ -142,3 +142,7 @@ function getDatePoints() {
 
     return trendDates;
 }
+
+function consoleLog(message) {
+    console.log(message);
+}
