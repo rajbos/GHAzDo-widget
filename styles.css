@@ -20,10 +20,11 @@
         text-decoration: none !important;
 }
 
-.title {
+.ghazdo-title {
     font-size: 1rem;
     text-align: left;
     text-wrap: balance;
+    margin: 0 0 10px;
 }
 
 .alertValue {
