@@ -30,3 +30,14 @@
 .alertValue {
     margin-block-start: 10px;
 }
+
+.ghazdo-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    border: 1px solid #dddddd00;
+}
+
+.ghazdo-table tr {
+    margin-top: 6px;
+}

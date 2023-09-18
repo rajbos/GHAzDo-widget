@@ -22,6 +22,35 @@
                 function (WidgetHelpers, Services, context) {
                 WidgetHelpers.IncludeWidgetStyles();
                 VSS.register("GHAzDoWidget.Chart", function () {
+                    async function renderTrendLine(organization, projectName, repoId, $container, chartService) {
+                        consoleLog('renderTrendLine');
+                        try {
+                            // get the trend data for alerts first
+                            const alertTrendLines = await getAlertsTrendLines(organization, projectName, repoId)
+                            consoleLog('Dependencies AlertTrend: ' +  JSON.stringify(alertTrendLines.dependencyAlertsTrend));
+                            consoleLog('Code scanning AlertTrend: ' +  JSON.stringify(alertTrendLines.codeAlertsTrend));
+                            consoleLog('Secrets AlertTrend: ' +  JSON.stringify(alertTrendLines.secretAlertsTrend));
+
+                            createChart($container, chartService, alertTrendLines);
+                        }
+                        catch (err) {
+                            consoleLog(`Error loading the alerts trend: ${err}`);
+                        }
+                    }
+
+                    async function renderPieChart(organization, projectName, repoId, $container, chartService) {
+                        consoleLog('renderPieChart');
+                        try {
+                            // get the trend data for alerts first
+                            const alertSeverityCount = await getAlertSeverityCounts(organization, projectName, repoId);
+
+                            createPieChart($container, chartService, alertSeverityCount);
+                        }
+                        catch (err) {
+                            consoleLog(`Error loading the alerts trend: ${err}`);
+                        }
+                    }
+
                     return {
                     load: async function(widgetSettings) {
                         return Services.ChartsService.getService().then(async function(chartService){
@@ -49,25 +78,31 @@
                             let repoId
                             // init empty object first
                             let alertTrendLines = {secretAlertTrend: [], dependencyAlertTrend: [], codeAlertsTrend: []};
+                            let chartType = 1;
+                            if (data && data.chartType && data.chartType !== "") {
+                                chartType = data.chartType;
+                                consoleLog('loaded chartType from widgetSettings: ' + chartType);
+                            }
+                            else {
+                                consoleLog('chartType is not set, using default value: ' + chartType);
+                            }
+
                             if (data && data.repo && data.repo !== "") {
                                 repoName = data.repo;
                                 repoId = data.repoId;
                                 consoleLog('loaded repoName from widgetSettings: ' + repoName);
 
-                                $title.text(`Advanced Security Alerts Trend`)
                                 $container.text(`${data.repo}`)
 
-                                try {
-                                    // get the trend data for alerts first
-                                    alertTrendLines = await getAlertsTrendLines(organization, projectName, repoId)
-                                    consoleLog('Dependencies AlertTrend: ' +  JSON.stringify(alertTrendLines.dependencyAlertsTrend));
-                                    consoleLog('Code scanning AlertTrend: ' +  JSON.stringify(alertTrendLines.codeAlertsTrend));
-                                    consoleLog('Secrets AlertTrend: ' +  JSON.stringify(alertTrendLines.secretAlertsTrend));
-
-                                    createChart($container, chartService, alertTrendLines);
-                                }
-                                catch (err) {
-                                    consoleLog(`Error loading the alerts trend: ${err}`);
+                                switch (chartType) {
+                                    case "2":
+                                        $title.text(`Advanced Security Alerts by Severity`)
+                                        renderPieChart(organization, projectName, repoId, $container, chartService);
+                                        break;
+                                    default:
+                                        $title.text(`Advanced Security Alerts Trend`)
+                                        renderTrendLine(organization, projectName, repoId, $container, chartService);
+                                        break;
                                 }
                             }
                             else {
