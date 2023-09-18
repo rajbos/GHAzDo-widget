@@ -48,7 +48,7 @@
                                 consoleLog('loaded repoName from widgetSettings_1x1: ' + repoName);
 
                                 // set the tile
-                                var title = $('h2.title');
+                                var title = $('h2.ghazdo-title');
                                 title.text(`${repoName}`);
                                 alerts = await getAlerts(organization, projectName, repoId);
                                 consoleLog('alerts: ' +  JSON.stringify(alerts));
