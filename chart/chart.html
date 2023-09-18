@@ -38,16 +38,16 @@
                         }
                     }
 
-                    async function renderPieChart(organization, projectName, repoId, $container, chartService) {
+                    async function renderPieChart(organization, projectName, repoId, $container, chartService, alertType) {
                         consoleLog('renderPieChart');
                         try {
                             // get the trend data for alerts first
-                            const alertSeverityCount = await getAlertSeverityCounts(organization, projectName, repoId);
+                            const alertSeverityCount = await getAlertSeverityCounts(organization, projectName, repoId, alertType);
 
                             createPieChart($container, chartService, alertSeverityCount);
                         }
                         catch (err) {
-                            consoleLog(`Error loading the alerts trend: ${err}`);
+                            consoleLog(`Error loading the alerts pie: ${err}`);
                         }
                     }
 
@@ -79,6 +79,7 @@
                             // init empty object first
                             let alertTrendLines = {secretAlertTrend: [], dependencyAlertTrend: [], codeAlertsTrend: []};
                             let chartType = 1;
+                            let alertTypeConfig = 1;
                             if (data && data.chartType && data.chartType !== "") {
                                 chartType = data.chartType;
                                 consoleLog('loaded chartType from widgetSettings: ' + chartType);
@@ -87,17 +88,27 @@
                                 consoleLog('chartType is not set, using default value: ' + chartType);
                             }
 
+                            if (data && data.alertType) {
+                                alertTypeConfig = data.alertType;
+                                consoleLog('loaded alertType from widgetSettings: ' + alertTypeConfig);
+                            }
+
                             if (data && data.repo && data.repo !== "") {
                                 repoName = data.repo;
                                 repoId = data.repoId;
-                                consoleLog('loaded repoName from widgetSettings: ' + repoName);
 
                                 $container.text(`${data.repo}`)
 
                                 switch (chartType) {
                                     case "2":
-                                        $title.text(`Advanced Security Alerts by Severity`)
-                                        renderPieChart(organization, projectName, repoId, $container, chartService);
+                                        try {
+                                            const alertType = GetAlertTypeFromValue(alertTypeConfig);
+                                            $title.text(`${alertType.display} Alerts by Severity`)
+                                            renderPieChart(organization, projectName, repoId, $container, chartService, alertType);
+                                        }
+                                        catch (err) {
+                                            consoleLog(`Error loading the alerts pie: ${err}`);
+                                        }
                                         break;
                                     default:
                                         $title.text(`Advanced Security Alerts Trend`)

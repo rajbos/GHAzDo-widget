@@ -14,8 +14,9 @@
                 VSS.require(["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient"],
                   function (Service, WidgetHelpers, context, GitWebApi) {
                     VSS.register("GHAzDoWidget.Chart.Configuration", function () {
-                        var $repoDropdown = $("#repo-dropdown");
-                        var $chartTypeDropdown = $("#chart-type");
+                        const $repoDropdown = $("#repo-dropdown");
+                        const $chartTypeDropdown = $("#chart-type");
+                        const $alertTypeDropdown = $("#alert-type");
 
                         function reloadWidget(widgetConfigurationContext) {
                             const customSettings = getSettings();
@@ -34,7 +35,8 @@
                                         data: JSON.stringify({
                                                 repo: $repoDropdown.val(),
                                                 repoId: repo.id,
-                                                chartType: $chartTypeDropdown.val()
+                                                chartType: $chartTypeDropdown.val(),
+                                                alertType: $alertTypeDropdown.val()
                                             })
                                     };
                                     return customSettings;
@@ -42,6 +44,18 @@
                             }
 
                             return {};
+                        }
+
+                        function reloadChartOptions() {
+                            const chartType = $chartTypeDropdown.val();
+                            if (chartType === "1") {
+                                // trend line
+                                $("#alertTypePanel").hide();
+                            }
+                            else if (chartType === "2") {
+                                // pie chart
+                                $("#alertTypePanel").show();
+                            }
                         }
 
                         return {
@@ -67,9 +81,14 @@
                                  }
 
                                  if (settings && settings.chartType) {
-                                    // select the repo that was saved in the settings
+                                    // select the chartType that was saved in the settings
                                      $chartTypeDropdown.val(settings.chartType);
                                  }
+
+                                if (settings && settings.alertType) {
+                                    // select the alertType that was saved in the settings
+                                    $alertTypeDropdown.val(settings.alertType);
+                                }
 
                                  // register a change event handler for the dropdowns
                                 $repoDropdown.on("change", function () {
@@ -77,6 +96,11 @@
                                 });
 
                                 $chartTypeDropdown.on("change", function () {
+                                    reloadWidget(widgetConfigurationContext)
+                                    reloadChartOptions();
+                                });
+
+                                $alertTypeDropdown.on("change", function () {
                                     reloadWidget(widgetConfigurationContext)
                                 });
 
@@ -116,6 +140,17 @@
                             </select>
                         </td>
                     </tr>
+                    <tr id="alertTypePanel">
+                        <td>
+                            <label class="label">Alert type: </label>
+                        </td>
+                        <td>
+                            <select id="alert-type" class="dropdown">
+                                <option value="1">Dependency</option>
+                                <option value="2">Secret</option>
+                                <option value="3">Code</option>
+                            </select>
+                        </td>
                 </table>
             </div>
         </body>
