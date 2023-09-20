@@ -63,7 +63,14 @@ function GetAlertTypeFromValue(value) {
 async function getAlerts(organization, projectName, repoId) {
     consoleLog('getAlerts');
 
-    try{
+    let values = {
+        count: 0,
+        dependencyAlerts: 0,
+        secretAlerts: 0,
+        codeAlerts: 0
+    };
+
+    try {
         // no pagination option, so just get the first 5000 alerts
         url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/AdvancedSecurity/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&api-version=7.2-preview.1`;
         consoleLog(`Calling url: [${url}]`);
@@ -74,16 +81,17 @@ async function getAlerts(organization, projectName, repoId) {
         const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name);
         const secretAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.SECRET.name);
         const codeAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.CODE.name);
-        return {
-            count: alertResult.count,
-            dependencyAlerts: dependencyAlerts.length,
-            secretAlerts: secretAlerts.length,
-            codeAlerts: codeAlerts.length
-        };
+
+        values.count = alertResult.count;
+        values.dependencyAlerts = dependencyAlerts.length;
+        values.secretAlerts = secretAlerts.length;
+        values.codeAlerts = codeAlerts.length;
     }
     catch (err) {
         consoleLog('error in calling the advec api: ' + err);
     }
+
+    return values;
 }
 
 async function getAlertsTrendLines(organization, projectName, repoId) {
@@ -116,6 +124,11 @@ async function getAlertsTrendLines(organization, projectName, repoId) {
     }
     catch (err) {
         consoleLog('error in calling the advec api: ' + err);
+        return {
+            secretAlertsTrend: [],
+            dependencyAlertsTrend: [],
+            codeAlertsTrend: []
+        }
     }
 }
 
@@ -198,6 +211,13 @@ async function getRepos(VSS, Service, GitWebApi) {
 }
 
 async function getAlertSeverityCounts(organization, projectName, repoId, alertType) {
+
+    let severityClasses = [
+        { severity: "critical", count: 0 },
+        { severity: "high", count: 0 },
+        { severity: "medium", count: 0},
+        { severity: "low", count: 0}
+    ];
     try {
         // todo: filter on alertType
         url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/AdvancedSecurity/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=7.2-preview.1`;
@@ -207,12 +227,6 @@ async function getAlertSeverityCounts(organization, projectName, repoId, alertTy
         consoleLog(`total alertResult count: ${alertResult.count} for alertType [${alertType.name}]`);
 
         // group the alerts based on the severity
-        let severityClasses = [
-            { severity: "critical", count: 0 },
-            { severity: "high", count: 0 },
-            { severity: "medium", count: 0},
-            { severity: "low", count: 0}
-        ];
         try {
             consoleLog(`severityClasses.length: [${severityClasses.length}]`);
 
@@ -228,9 +242,9 @@ async function getAlertSeverityCounts(organization, projectName, repoId, alertTy
         }
 
         consoleLog('severityClasses summarized: ' + JSON.stringify(severityClasses));
-        return severityClasses;
     }
     catch (err) {
         consoleLog('error in calling the advec api: ' + err);
     }
+    return severityClasses;
 }
