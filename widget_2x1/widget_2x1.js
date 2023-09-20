@@ -21,6 +21,7 @@ async function loadWidget(widgetSettings, organization, projectName) {
         // set the tile
         var title = $('h2.ghazdo-title');
         title.text(`Security Alerts for ${repoName}`);
+        title.attr('title', repoName);
         alerts = await getAlerts(organization, projectName, repoId);
         consoleLog('alerts: ' +  JSON.stringify(alerts));
 
