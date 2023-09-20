@@ -1,10 +1,10 @@
-async function createChart($container, chartService, alertTrendLines){
+async function createChart($container, chartService, alertTrendLines, widgetSize) {
 
     const datePoints = getDatePoints();
     var chartOptions = {
         "hostOptions": {
             "height": "290",
-            "width": "300"
+            "width": getChartWidthFromWidgetSize(widgetSize)
         },
         "chartType": "line",
         "series":
@@ -39,7 +39,12 @@ async function createChart($container, chartService, alertTrendLines){
     }
 }
 
-async function createPieChart($container, chartService, alertSeverityCount) {
+function getChartWidthFromWidgetSize(widgetSize) {
+    // a column is 160px wide, and gutters are 10px wide, and there is 1 14px margins on the right side to handle
+    return 160 * widgetSize.columnSpan + (10 * (widgetSize.columnSpan -1)) - (1 * 14);
+}
+
+async function createPieChart($container, chartService, alertSeverityCount, widgetSize) {
     // convert alertSeverityCount to two arrays, one for the labels and one for the data
     consoleLog(`createPieChart for alertSeverityCount: ${JSON.stringify(alertSeverityCount)}`);
     const labels = [];
@@ -53,7 +58,7 @@ async function createPieChart($container, chartService, alertSeverityCount) {
     var chartOptions = {
         "hostOptions": {
             "height": "290",
-            "width": "300"
+            "width": getChartWidthFromWidgetSize(widgetSize)
         },
         "chartType": "pie",
         "series": [{
