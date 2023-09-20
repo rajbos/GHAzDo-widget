@@ -2,16 +2,12 @@ Extension for Azure DevOps that shows the number of open security alerts for the
 
 Install from the marketplace: https://marketplace.visualstudio.com/items?itemName=RobBos.GHAzDoWidget
 
-## Examples:
+## Widgets:
+* Show all three alert counts in one widget in 2 by 1 layout
+* Split it into three separate widgets with just the single value you scan for (1x1 or 2x1)
+* Show a trend line of all alerts in the last 3 weeks (2x2,3x2,4x2)
 
-### Show all three alert counts in one widget in 2 by 1 layout:
-![Screenshot of the widget in 2 by 1 showing the repository name and the alert count for dependencies, secrets, and code scanning](/img/example_2x1.png)
-
-### Split it into three separate widgets (1 by 1) with just the single value you scan for:
-![Screenshot of the widget in 1 by 1 showing the repository name and the alert count for dependencies, secrets, and code scanning](/img/example_1x1.png)
-
-### Show a trend line (2 by 2) of all alerts in the last 3 weeks:
-![Screenshot of the chart widget in 2 by 2 showing the repository name and the alert count for dependencies, secrets, and code scanning](/img/example_chart_2x2.png)
+![Screenshot of the all the widgets with alert count for dependencies, secrets, and code scanning](/img/overview_600.png)
 
 ## GitHub repo
 Please report issues, feature request, and feedback here: https://github.com/rajbos/GHAzDo-widget.
