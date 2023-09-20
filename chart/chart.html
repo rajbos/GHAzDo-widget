@@ -22,7 +22,7 @@
                 function (WidgetHelpers, Services, context) {
                 WidgetHelpers.IncludeWidgetStyles();
                 VSS.register("GHAzDoWidget.Chart", function () {
-                    async function renderTrendLine(organization, projectName, repoId, $container, chartService) {
+                    async function renderTrendLine(organization, projectName, repoId, $container, chartService, widgetSize) {
                         consoleLog('renderTrendLine');
                         try {
                             // get the trend data for alerts first
@@ -31,20 +31,20 @@
                             consoleLog('Code scanning AlertTrend: ' +  JSON.stringify(alertTrendLines.codeAlertsTrend));
                             consoleLog('Secrets AlertTrend: ' +  JSON.stringify(alertTrendLines.secretAlertsTrend));
 
-                            createChart($container, chartService, alertTrendLines);
+                            createChart($container, chartService, alertTrendLines, widgetSize);
                         }
                         catch (err) {
                             consoleLog(`Error loading the alerts trend: ${err}`);
                         }
                     }
 
-                    async function renderPieChart(organization, projectName, repoId, $container, chartService, alertType) {
+                    async function renderPieChart(organization, projectName, repoId, $container, chartService, alertType, widgetSize) {
                         consoleLog('renderPieChart');
                         try {
                             // get the trend data for alerts first
                             const alertSeverityCount = await getAlertSeverityCounts(organization, projectName, repoId, alertType);
 
-                            createPieChart($container, chartService, alertSeverityCount);
+                            createPieChart($container, chartService, alertSeverityCount, widgetSize);
                         }
                         catch (err) {
                             consoleLog(`Error loading the alerts pie: ${err}`);
@@ -104,7 +104,7 @@
                                         try {
                                             const alertType = GetAlertTypeFromValue(alertTypeConfig);
                                             $title.text(`${alertType.display} Alerts by Severity`)
-                                            renderPieChart(organization, projectName, repoId, $container, chartService, alertType);
+                                            renderPieChart(organization, projectName, repoId, $container, chartService, alertType, widgetSettings.size);
                                         }
                                         catch (err) {
                                             consoleLog(`Error loading the alerts pie: ${err}`);
@@ -112,7 +112,7 @@
                                         break;
                                     default:
                                         $title.text(`Advanced Security Alerts Trend`)
-                                        renderTrendLine(organization, projectName, repoId, $container, chartService);
+                                        renderTrendLine(organization, projectName, repoId, $container, chartService, widgetSettings.size);
                                         break;
                                 }
                             }
