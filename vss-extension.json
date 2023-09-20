@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "GHAzDoWidget",
-    "version": "0.0.1.6",
+    "version": "0.0.1.7",
     "public": true,
     "name": "Advanced Security dashboard Widgets",
     "description": "GitHub Advanced Security for Azure DevOps dashboard widgets",
@@ -110,7 +110,7 @@
             "type": "ms.vss-dashboards-web.widget",
             "targets": [
                 "ms.vss-dashboards-web.widget-catalog",
-                "RobBos.GHAzDoWidget-DEV.GHAzDoWidget.Chart.Configuration"
+                "RobBos.GHAzDoWidget.GHAzDoWidget.Chart.Configuration"
             ],
             "properties": {
                 "name": "GHAzDoWidget - Chart",
