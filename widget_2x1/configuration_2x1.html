@@ -13,36 +13,14 @@
 
                 VSS.require(["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient"],
                   function (Service, WidgetHelpers, context, GitWebApi) {
-                    VSS.register("GHAzDoWidget.Configuration", function () {
+                    VSS.register("GHAzDoWidget.Configuration", async function () {
                         var $repoDropdown = $("#repo-dropdown");
+                        // get a repos in this project
+                        const repos = await getRepos(VSS, Service, GitWebApi);
 
                         return {
                             load: async function (widgetSettings, widgetConfigurationContext) {
                                 var settings = logWidgetSettings(widgetSettings, VSS, "2x1");
-
-                                let repos = [];
-                                const dataService = await VSS.getService(VSS.ServiceIds.ExtensionData);
-                                try {
-                                    const document = await dataService.getDocument("repos", "repositoryList");
-                                    consoleLog("Doc retrieved from service:");
-                                    consoleLog(JSON.stringify(document));
-                                    repos = document.repos;
-                                }
-                                catch (e) {
-                                    consoleLog(`Error getting the repos from the data service: ${e}`)
-                                }
-
-                                if (!repos || repos.length === 0) {
-                                    consoleLog("No repos found in the data service, loading them from the API");
-                                    // get a new list of repos for this project
-                                    repos = await getRepos(VSS, Service, GitWebApi);
-
-                                    // store the repos in the dataService: (default is project collection scope)
-                                    dataService.createDocument("repos", {id: "repositoryList", lastUpdated: new Date(), repos}).then(function(doc) {
-                                        // Even if no ID was passed to createDocument, one gets generated
-                                        consoleLog(`New document was created with ID: ${doc.id}` );
-                                    });
-                                }
 
                                 // add all repos as selection options to the dropdown
                                 if (repos) {

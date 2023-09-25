@@ -13,10 +13,11 @@
 
                 VSS.require(["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient"],
                   function (Service, WidgetHelpers, context, GitWebApi) {
-                    VSS.register("GHAzDoWidget.Chart.Configuration", function () {
+                    VSS.register("GHAzDoWidget.Chart.Configuration", async function () {
                         const $repoDropdown = $("#repo-dropdown");
                         const $chartTypeDropdown = $("#chart-type");
                         const $alertTypeDropdown = $("#alert-type");
+                        const repos = await getRepos(VSS, Service, GitWebApi);
 
                         function reloadWidget(widgetConfigurationContext) {
                             const customSettings = getSettings();
@@ -60,10 +61,8 @@
 
                         return {
                             load: async function (widgetSettings, widgetConfigurationContext) {
-                                var settings = JSON.parse(widgetSettings.customSettings.data);
-                                console.log(`Loading the Chart.2x2 settings with ${JSON.stringify(settings)}`)
+                                var settings = logWidgetSettings(widgetSettings, VSS, "Chart.2x2");
 
-                                const repos = await getRepos(VSS, Service, GitWebApi);
                                 // add all repos as selection options to the dropdown
                                 if (repos) {
                                     // add a top option to select no repo

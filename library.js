@@ -216,24 +216,80 @@ async function getSavedDocument(VSS, documentCollection, documentId) {
     const dataService = await VSS.getService(VSS.ServiceIds.ExtensionData);
     try {
         const document = await dataService.getDocument(documentCollection, documentId);
-
-        return document.data;
+        consoleLog(`Loaded document with Id: [${document.id}] and lastUpdated: [${document.lastUpdated}]`);
+        consoleLog(`Document data: ${JSON.stringify(document)}`);
+        return document;
     }
     catch (err) {
-        console.log(`Error loading the document with Id [${documentId}]: ${err}`);
+        console.log(`Error loading the document with Id [${documentId}]: ${JSON.stringify(err)}`);
         return null;
+    }
+}
+
+async function saveDocument(VSS, documentCollection, documentId, data) {
+
+    try {
+        //delete document in case it exists, there is an issue with setDocument it seems
+        removeDocument(VSS, documentCollection, documentId);
+    }
+    catch (err) {
+        console.log(`Tried deleting the document with Id [${documentId}]: ${JSON.stringify(err)}`);
+    }
+
+    const dataService = await VSS.getService(VSS.ServiceIds.ExtensionData);
+    try {
+        const document = {
+            id: documentId,
+            lastUpdated: new Date(),
+            data: data,
+            __eTag: -1
+        }
+
+        const savedDocument = await dataService.setDocument(documentCollection, document);
+        consoleLog(`New document was created with Id: [${savedDocument.id}]`);
+    }
+    catch (err) {
+        console.log(`Error saving the document with Id [${documentId}]: ${JSON.stringify(err)}`);
+    }
+}
+
+async function removeDocument(VSS, documentCollection, documentId, data) {
+    const dataService = await VSS.getService(VSS.ServiceIds.ExtensionData);
+    try {
+        await dataService.deleteDocument(documentCollection, documentId);
+        consoleLog(`Document with Id: [${documentId}] was deleted`);
+    }
+    catch (err) {
+        console.log(`Error deleting the document with Id [${documentId}]: ${JSON.stringify(err)}`);
     }
 }
 
 async function getRepos(VSS, Service, GitWebApi) {
 
-    let data;
-    try {
-        const documentCollection = "repos";
-        const documentId = "repositoryList";
-        data = getSavedDocument(VSS, documentCollection, documentId);
+    const documentCollection = "repos";
+    const documentId = "repositoryList";
 
-        return data;
+    // needed to clean up
+    //removeDocument(VSS, documentCollection, documentId);
+
+    try {
+        const document = await getSavedDocument(VSS, documentCollection, documentId);
+        consoleLog(`document inside getRepos: ${JSON.stringify(document)}`);
+        if (document || document.data.length > 0) {
+            consoleLog(`Loaded repos from document store. Last updated [${document.lastUpdated}]`);
+            // get the data type of lastUpdated
+            consoleLog(`typeof document.lastUpdated: ${typeof document.lastUpdated}`)
+            // if data.lastUpdated is older then 1 hour, then refresh the repos
+            const diff = new Date() - new Date(document.lastUpdated);
+            const diffHours = Math.floor(diff / 1000 / 60 / 60);
+            if (diffHours < 4) {
+                consoleLog(`Repos are less then 1 hour old, so using the cached version. diffHours [${diffHours}]`);
+                return document.data;
+            }
+            else {
+                consoleLog(`Repos are older then 1 hour, so refreshing the repo list is needed. diffHours [${diffHours}]`);
+            }
+        }
     }
     catch (err) {
         console.log(`Error loading the available repos from document store: ${err}`);
@@ -245,14 +301,30 @@ async function getRepos(VSS, Service, GitWebApi) {
         const project = webContext.project;
 
         const gitClient = Service.getClient(GitWebApi.GitHttpClient);
-        repos = await gitClient.getRepositories(project.name);
-        console.log(`Found these repos: ${JSON.stringify(repos)}`);
+        let repos = await gitClient.getRepositories(project.name);
+        consoleLog(`Found these repos: ${JSON.stringify(repos)}`);
 
+        // convert the repos to a simple list of names and ids:
+        repos = repos.map(repo => {
+            return {
+                name: repo.name,
+                id: repo.id
+            }
+        });
+        consoleLog(`Converted repos to: ${JSON.stringify(repos)}`);
+
+        // save the repos to the document store for next time
+        try {
+            await saveDocument(VSS, documentCollection, documentId, repos);
+        }
+        catch (err) {
+            console.log(`Error saving the available repos to document store: ${JSON.stringify(err)}`);
+        }
         return repos;
     }
     catch (err) {
         console.log(`Error loading the available repos: ${err}`);
-        return [];
+        return null;
     }
 }
 
