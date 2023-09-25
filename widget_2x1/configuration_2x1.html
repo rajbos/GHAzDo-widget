@@ -18,10 +18,32 @@
 
                         return {
                             load: async function (widgetSettings, widgetConfigurationContext) {
-                                var settings = JSON.parse(widgetSettings.customSettings.data);
-                                console.log(`Loading the 2x1 settings with ${JSON.stringify(settings)}`)
+                                var settings = logWidgetSettings(widgetSettings, VSS, "2x1");
 
-                                const repos = await getRepos(VSS, Service, GitWebApi);
+                                let repos = [];
+                                const dataService = await VSS.getService(VSS.ServiceIds.ExtensionData);
+                                try {
+                                    const document = await dataService.getDocument("repos", "repositoryList");
+                                    consoleLog("Doc retrieved from service:");
+                                    consoleLog(JSON.stringify(document));
+                                    repos = document.repos;
+                                }
+                                catch (e) {
+                                    consoleLog(`Error getting the repos from the data service: ${e}`)
+                                }
+
+                                if (!repos || repos.length === 0) {
+                                    consoleLog("No repos found in the data service, loading them from the API");
+                                    // get a new list of repos for this project
+                                    repos = await getRepos(VSS, Service, GitWebApi);
+
+                                    // store the repos in the dataService: (default is project collection scope)
+                                    dataService.createDocument("repos", {id: "repositoryList", lastUpdated: new Date(), repos}).then(function(doc) {
+                                        // Even if no ID was passed to createDocument, one gets generated
+                                        consoleLog(`New document was created with ID: ${doc.id}` );
+                                    });
+                                }
+
                                 // add all repos as selection options to the dropdown
                                 if (repos) {
                                     // add a top option to select no repo

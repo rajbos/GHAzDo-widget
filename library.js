@@ -75,17 +75,22 @@ async function getAlerts(organization, projectName, repoId) {
         url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/AdvancedSecurity/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&api-version=7.2-preview.1`;
         consoleLog(`Calling url: [${url}]`);
         const alertResult = await authenticatedGet(url);
-        //consoleLog('alertResult: ' + JSON.stringify(alertResult));
-        consoleLog('alertResult count: ' + alertResult.count);
+        if (!alertResult) {
+            consoleLog('alertResult is null');
+        }
+        else {
+            //consoleLog('alertResult: ' + JSON.stringify(alertResult));
+            consoleLog('alertResult count: ' + alertResult.count);
 
-        const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name);
-        const secretAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.SECRET.name);
-        const codeAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.CODE.name);
+            const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name);
+            const secretAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.SECRET.name);
+            const codeAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.CODE.name);
 
-        values.count = alertResult.count;
-        values.dependencyAlerts = dependencyAlerts.length;
-        values.secretAlerts = secretAlerts.length;
-        values.codeAlerts = codeAlerts.length;
+            values.count = alertResult.count;
+            values.dependencyAlerts = dependencyAlerts.length;
+            values.secretAlerts = secretAlerts.length;
+            values.codeAlerts = codeAlerts.length;
+        }
     }
     catch (err) {
         consoleLog('error in calling the advec api: ' + err);
@@ -193,15 +198,56 @@ function consoleLog(message) {
     console.log(message);
 }
 
+function logWidgetSettings(widgetSettings, VSS, description) {
+    const settings = JSON.parse(widgetSettings.customSettings.data);
+    const extensionContext = VSS.getExtensionContext();
+    console.log(`Loading the ${description} with settings: ${JSON.stringify(settings)}, for extension version [${extensionContext.version}]`)
+
+    return settings
+}
+
+function getWidgetId(VSS) {
+    const extensionContext = VSS.getExtensionContext();
+    const widgetId = extensionContext.publisherId + "." + extensionContext.extensionId + ".GHAzDoWidget.Configuration";
+    return widgetId;
+}
+
+async function getSavedDocument(VSS, documentCollection, documentId) {
+    const dataService = await VSS.getService(VSS.ServiceIds.ExtensionData);
+    try {
+        const document = await dataService.getDocument(documentCollection, documentId);
+
+        return document.data;
+    }
+    catch (err) {
+        console.log(`Error loading the document with Id [${documentId}]: ${err}`);
+        return null;
+    }
+}
+
 async function getRepos(VSS, Service, GitWebApi) {
+
+    let data;
+    try {
+        const documentCollection = "repos";
+        const documentId = "repositoryList";
+        data = getSavedDocument(VSS, documentCollection, documentId);
+
+        return data;
+    }
+    catch (err) {
+        console.log(`Error loading the available repos from document store: ${err}`);
+    }
+
+    consoleLog(`Loading repositories from the API`);
     try {
         const webContext = VSS.getWebContext();
         const project = webContext.project;
 
-        // todo: load the available repos in this project
         const gitClient = Service.getClient(GitWebApi.GitHttpClient);
         repos = await gitClient.getRepositories(project.name);
         console.log(`Found these repos: ${JSON.stringify(repos)}`);
+
         return repos;
     }
     catch (err) {
