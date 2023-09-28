@@ -1,12 +1,16 @@
 {
     "manifestVersion": 1,
     "id": "GHAzDoWidget-DEV",
-    "version": "0.2.36",
+    "version": "0.2.70",
     "public": false,
     "name": "Advanced Security dashboard Widgets [DEV]",
     "description": "[DEV] GitHub Advanced Security for Azure DevOps dashboard widgets",
     "publisher": "RobBos",
-    "categories": ["Azure Boards"],
+    "categories": [
+        "Azure Boards",
+        "Azure Repos",
+        "Azure Pipelines"
+    ],
     "scopes": [
         "vso.profile",
         "vso.code",
@@ -23,7 +27,8 @@
         "GHAS",
         "GHAzDo",
         "widget",
-        "Security alerts"
+        "Security alerts",
+        "Pull requests"
     ],
     "icons": {
         "default": "img/logo.png"
@@ -53,7 +58,7 @@
                 "description": "[DEV] Display the amount of active security alerts from GitHub Advanced Security",
                 "catalogIconUrl": "img/publogo.png",
                 "previewImageUrl": "img/preview.png",
-                "uri": "widget_2x1/widget_2x1.html",
+                "uri": "widgets/widget_2x1/widget_2x1.html",
                 "supportedSizes": [
                      {
                             "rowSpan": 1,
@@ -70,7 +75,7 @@
             "properties": {
                 "name": "GHAzDoWidget Configuration",
                 "description": "Configures GHAzDoWidget",
-                "uri": "widget_2x1/configuration_2x1.html"
+                "uri": "widgets/widget_2x1/configuration_2x1.html"
             }
         },
         {
@@ -85,7 +90,7 @@
                 "description": "[DEV] Display the amount of active security alerts from GitHub Advanced Security for a single type of alert",
                 "catalogIconUrl": "img/publogo.png",
                 "previewImageUrl": "img/preview.png",
-                "uri": "widget_1x1/widget_1x1.html",
+                "uri": "widgets/widget_1x1/widget_1x1.html",
                 "supportedSizes": [
                 {
                     "rowSpan": 1,
@@ -105,7 +110,7 @@
             "properties": {
                 "name": "GHAzDoWidget Configuration",
                 "description": "Configures GHAzDoWidget",
-                "uri": "widget_1x1/configuration_1x1.html"
+                "uri": "widgets/widget_1x1/configuration_1x1.html"
             }
         },
         {
@@ -119,7 +124,7 @@
                 "name": "[DEV] GHAzDoWidget - Chart",
                 "description": "[DEV] A trend chart widget for Advanced Security alerts.",
                 "catalogIconUrl": "img/publogo.png",
-                "uri": "/chart/chart.html",
+                "uri": "widgets/chart/chart.html",
                 "supportedSizes": [
                     {
                         "rowSpan": 2,
@@ -146,19 +151,59 @@
             "properties": {
                 "name": "GHAzDoWidget Chart Configuration",
                 "description": "Configures GHAzDoWidget.Chart",
-                "uri": "chart/configuration_2x2.html"
+                "uri": "widgets/chart/configuration_2x2.html"
+            }
+        },
+        {
+            "id": "GHAzDoWidget.TestingWidget",
+            "type": "ms.vss-dashboards-web.widget",
+            "targets": [
+                "ms.vss-dashboards-web.widget-catalog"
+            ],
+            "properties": {
+                "name": "[DEV] GHAzDO testing widget",
+                "description": "[DEV] test stuff",
+                "catalogIconUrl": "img/publogo.png",
+                "previewImageUrl": "img/preview.png",
+                "uri": "widgets/testing_widget/testing.html",
+                "supportedSizes": [
+                     {
+                            "rowSpan": 1,
+                            "columnSpan": 2
+                        }
+                    ],
+                "supportedScopes": ["project_team"]
+            }
+        },
+        {
+            "id": "GHAzDoWidget.Hub",
+            "type": "ms.vss-web.hub",
+            "description": "[DEV] GHAzDO Hub",
+            "targets": [
+                "ms.vss-work-web.work-hub-group",
+                "ms.vss-code-web.code-hub-group"
+            ],
+            "properties": {
+                "name": "Advanced Security Dashboard",
+                "uri": "widgets/hub/hub.html",
+                "iconName": "Shield",
+                "order": 99
+            }
+        },
+        {
+            "id": "GHAzDoDependencyReviewTask",
+            "type": "ms.vss-distributed-task.task",
+            "targets": [
+                "ms.vss-distributed-task.tasks"
+            ],
+            "properties": {
+                "name": "dependencyReviewTask"
             }
         }
     ],
     "files": [
         {
-            "path": "widget_1x1", "addressable": true
-        },
-        {
-            "path": "widget_2x1", "addressable": true
-        },
-        {
-            "path": "chart", "addressable": true
+            "path": "widgets", "addressable": true
         },
         {
             "path": "library.js", "addressable": true
@@ -170,9 +215,17 @@
             "path": "img", "addressable": true
         },
         {
+            "path": "dependencyReviewTask", "addressable": true
+        },
+        {
             "path": "node_modules/vss-web-extension-sdk/lib",
             "addressable": true,
             "packagePath": "lib"
+        },
+        {
+            "path": "node_modules/azure-pipelines-task-lib",
+            "addressable": true,
+            "packagePath": "azure-pipelines-task-lib"
         }
     ]
 }

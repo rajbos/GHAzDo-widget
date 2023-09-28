@@ -5,10 +5,16 @@
     "publish": "tfx extension create",
     "publish-explain": "go to https://marketplace.visualstudio.com/manage and publish manually"
   },
-  "dependencies": {},
+  "dependencies": {
+    "azure-pipelines-task-lib": "^4.6.0"
+  },
   "devDependencies": {
-    "vss-web-extension-sdk": "^5.141.0",
-    "tfx-cli": "^0.16.0"
+    "@types/node": "^20.7.0",
+    "@types/q": "^1.5.6",
+    "install": "^0.13.0",
+    "npm": "^10.1.0",
+    "tfx-cli": "^0.16.0",
+    "vss-web-extension-sdk": "^5.141.0"
   },
   "version": "0.0.1"
 }

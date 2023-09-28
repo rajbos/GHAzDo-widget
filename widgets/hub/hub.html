@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="../../lib/VSS.SDK.min.js"></script>
+    <script src="../../library.js"></script>
+    <script src="../chart/chart.js"></script>
+    <link rel="stylesheet" href="../../styles.css" />
+</head>
+<body>
+    <script lang="">
+        VSS.init({
+                explicitNotifyLoaded: true,
+                usePlatformStyles: true
+            });
+
+        VSS.require([
+                    "TFS/Dashboards/WidgetHelpers",
+                    "Charts/Services",
+                    "VSS/Context",
+                    "VSS/Authentication/Services"
+                ],
+                async function (WidgetHelpers, Services, context) {
+                    consoleLog('VSS.require function');
+                    try {
+                    //WidgetHelpers.IncludeWidgetStyles();
+                    //VSS.register("GHAzDoWidget.Hub", function () {
+                    consoleLog('VSS.register Hub function');
+                    async function renderTrendLine(organization, projectName, repoId, $container, chartService, widgetSize) {
+                        consoleLog('renderTrendLine');
+                        try {
+                            // get the trend data for alerts first
+                            const alertTrendLines = await getAlertsTrendLines(organization, projectName, repoId)
+                            consoleLog('Dependencies AlertTrend: ' +  JSON.stringify(alertTrendLines.dependencyAlertsTrend));
+                            consoleLog('Code scanning AlertTrend: ' +  JSON.stringify(alertTrendLines.codeAlertsTrend));
+                            consoleLog('Secrets AlertTrend: ' +  JSON.stringify(alertTrendLines.secretAlertsTrend));
+
+                            createChart($container, chartService, alertTrendLines, widgetSize);
+                        }
+                        catch (err) {
+                            consoleLog(`Error loading the alerts trend: ${err}`);
+                        }
+                    }
+
+                    async function renderPieChart(organization, projectName, repoId, $container, chartService, alertType, widgetSize) {
+                        consoleLog('renderPieChart');
+                        try {
+                            // get the trend data for alerts first
+                            const alertSeverityCount = await getAlertSeverityCounts(organization, projectName, repoId, alertType);
+
+                            createPieChart($container, chartService, alertSeverityCount, widgetSize);
+                        }
+                        catch (err) {
+                            consoleLog(`Error loading the alerts pie: ${err}`);
+                        }
+                    }
+
+                    const chartService = await Services.ChartsService.getService();
+                    consoleLog("Starting to create chart");
+                    var $container = $('#Chart-Container');
+                    var $title = $('h2.ghazdo-title');
+
+                    if (!chartService) {
+                        consoleLog("chartService is null");
+                    }
+
+                    const webContext = VSS.getWebContext();
+                    const project = webContext.project;
+                    const organization = webContext.account.name;
+                    const projectId = project.id;
+                    // convert project.name to url encoding
+                    const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26");
+
+                    consoleLog('project id: ' + projectId);
+                    consoleLog('project name: ' + projectName);
+                    consoleLog('organization name: ' + organization);
+
+                    //consoleLog(`WidgetSettings inside loadChartWidget_2x2: ${JSON.stringify(widgetSettings)}`);
+
+                    // data contains a stringified json object, so we need to make a json object from it
+                    //const data = JSON.parse(widgetSettings.customSettings.data);
+                    const data = {
+                        chartType: 1,
+                        alertType: 1,
+                        repo: "eShopOnWeb",
+                        repoId: "5e5195e1-1b44-4d4b-9310-5d33ee2c4d6c"
+                    }
+
+                    let repoName
+                    let repoId
+                    // init empty object first
+                    let alertTrendLines = {secretAlertTrend: [], dependencyAlertTrend: [], codeAlertsTrend: []};
+                    let chartType = 1;
+                    let alertTypeConfig = 1;
+                    if (data && data.chartType && data.chartType !== "") {
+                        chartType = data.chartType;
+                        consoleLog('loaded chartType from widgetSettings: ' + chartType);
+                    }
+                    else {
+                        consoleLog('chartType is not set, using default value: ' + chartType);
+                    }
+
+                    if (data && data.alertType) {
+                        alertTypeConfig = data.alertType;
+                        consoleLog('loaded alertType from widgetSettings: ' + alertTypeConfig);
+                    }
+
+                    if (data && data.repo && data.repo !== "") {
+                        repoName = data.repo;
+                        repoId = data.repoId;
+
+                        $container.text(`${data.repo}`)
+
+                        const chartSize = {
+                            columnSpan: 2
+                        }
+
+                        switch (chartType) {
+                            case "2":
+                                try {
+                                    const alertType = GetAlertTypeFromValue(alertTypeConfig);
+                                    $title.text(`${alertType.display} Alerts by Severity`)
+                                    renderPieChart(organization, projectName, repoId, $container, chartService, alertType, chartSize);
+                                }
+                                catch (err) {
+                                    consoleLog(`Error loading the alerts pie: ${err}`);
+                                }
+                                break;
+                            default:
+                                try {
+                                    $title.text(`Advanced Security Alerts Trend`)
+                                    renderTrendLine(organization, projectName, repoId, $container, chartService, chartSize);
+                                }
+                                catch (err) {
+                                    consoleLog(`Error loading the alerts trend: ${err}`);
+                                }
+                                break;
+                        }
+                        consoleLog('rendered chart');
+                    }
+                    else {
+                        consoleLog('configuration is needed first, opening with empty values');
+                        // set the tile to indicate config is needed
+                        $title.text(`Configure the widget to get Advanced Security alerts trend information`);
+                    }
+
+                    consoleLog('returning WidgetStatusHelper.Success()');
+                    //return WidgetHelpers.WidgetStatusHelper.Success();
+                }
+                catch (err) {
+                    consoleLog(`Error loading the page contents: ${JSON.stringify(err)}`);
+                }
+            VSS.notifyLoadSucceeded();
+        });
+    </script>
+
+    <div class="widget">
+        <h2 class="ghazdo-title">GHAzDo Hub</h2>
+        <div id="Chart-Container"></div>
+    </div>
+
+    <style>
+        .widget {
+            width: 320px;
+            border: solid 1px silver;
+            margin-left: 11px;
+            margin-top: 10px;
+            padding: 5px 5px 5px 5px;
+        }
+
+        .region-headerBreadcrumb {
+           display: none;
+        }
+    </style>
+</body>
+</html>

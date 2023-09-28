@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="../../lib/VSS.SDK.min.js"></script>
+        <script src="../../library.js"></script>
+        <script src="../widget_1x1/widget_1x1.js"></script>
+        <link rel="stylesheet" href="../../styles.css" />
+
+        <script type="text/javascript">
+            VSS.init({
+                explicitNotifyLoaded: true,
+                usePlatformStyles: true
+            });
+
+            VSS.require(
+                ["TFS/Dashboards/WidgetHelpers", "VSS/Context", "VSS/Authentication/Services"],
+                async function (WidgetHelpers, context)
+                {
+                    function testingLog(message) {
+                        var $title = $('h2.ghazdo-title');
+                        $title.text(message);
+                    }
+
+                    WidgetHelpers.IncludeWidgetStyles();
+                    VSS.register("GHAzDoWidget.TestingWidget", function () {
+                        const webContext = VSS.getWebContext();
+                        const project = webContext.project;
+                        const organization = webContext.account.name;
+                        const projectId = project.id;
+                        // convert project.name to url encoding
+                        const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26");
+
+                        consoleLog('project id: ' + projectId);
+                        consoleLog('project name: ' + projectName);
+                        consoleLog('organization name: ' + organization);
+
+                        return {
+                            load: async function (widgetSettings) {
+                                documentCollection = "repos"
+                                documentId = "testingWidgetInfo"
+                                let document;
+                                try {
+                                    document = await getSavedDocument(VSS, documentCollection, documentId);
+                                    testingLog('lastUpdated: ' + JSON.stringify(document.lastUpdated));
+                                }
+                                catch (err) {
+                                    testingLog('error getting document: ' + JSON.stringify(err));
+                                }
+
+                                if (!document) {
+                                    // store a new document for testing
+                                    document = {
+                                        "testing": "testing"
+                                    }
+                                    try {
+                                        await saveDocument(VSS, documentCollection, documentId, document);
+                                        testingLog('document saved');
+                                    }
+                                    catch (err) {
+                                        testingLog('error saving document: ' + JSON.stringify(err));
+                                    }
+                                }
+
+                                return WidgetHelpers.WidgetStatusHelper.Success();
+                            }
+                        }
+                    });
+                    VSS.notifyLoadSucceeded();
+                }
+            );
+        </script>
+
+    </head>
+    <body>
+        <div class="widget GHAzDo-widget">
+            <h2 class="ghazdo-title" title="">Testing info</h2>
+            <div id="query-info-container" class="column-container">
+
+            </div>
+        </div>
+    </body>
+</html>
