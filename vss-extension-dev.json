@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "GHAzDoWidget-DEV",
-    "version": "0.2.72",
+    "version": "0.2.79",
     "public": false,
     "name": "Advanced Security dashboard Widgets [DEV]",
     "description": "[DEV] GitHub Advanced Security for Azure DevOps dashboard widgets",
@@ -58,7 +58,7 @@
                 "description": "[DEV] Display the amount of active security alerts from GitHub Advanced Security",
                 "catalogIconUrl": "img/publogo.png",
                 "previewImageUrl": "img/preview.png",
-                "uri": "widgets/widget_2x1/widget_2x1.html",
+                "uri": "widgets/widgets/widget_2x1/widget_2x1.html",
                 "supportedSizes": [
                      {
                             "rowSpan": 1,
@@ -75,7 +75,7 @@
             "properties": {
                 "name": "GHAzDoWidget Configuration",
                 "description": "Configures GHAzDoWidget",
-                "uri": "widgets/widget_2x1/configuration_2x1.html"
+                "uri": "widgets/widgets/widget_2x1/configuration_2x1.html"
             }
         },
         {
@@ -90,7 +90,7 @@
                 "description": "[DEV] Display the amount of active security alerts from GitHub Advanced Security for a single type of alert",
                 "catalogIconUrl": "img/publogo.png",
                 "previewImageUrl": "img/preview.png",
-                "uri": "widgets/widget_1x1/widget_1x1.html",
+                "uri": "widgets/widgets/widget_1x1/widget_1x1.html",
                 "supportedSizes": [
                 {
                     "rowSpan": 1,
@@ -110,7 +110,7 @@
             "properties": {
                 "name": "GHAzDoWidget Configuration",
                 "description": "Configures GHAzDoWidget",
-                "uri": "widgets/widget_1x1/configuration_1x1.html"
+                "uri": "widgets/widgets/widget_1x1/configuration_1x1.html"
             }
         },
         {
@@ -124,7 +124,7 @@
                 "name": "[DEV] GHAzDoWidget - Chart",
                 "description": "[DEV] A trend chart widget for Advanced Security alerts.",
                 "catalogIconUrl": "img/publogo.png",
-                "uri": "widgets/chart/chart.html",
+                "uri": "widgets/widgets/chart/chart.html",
                 "supportedSizes": [
                     {
                         "rowSpan": 2,
@@ -151,7 +151,7 @@
             "properties": {
                 "name": "GHAzDoWidget Chart Configuration",
                 "description": "Configures GHAzDoWidget.Chart",
-                "uri": "widgets/chart/configuration_2x2.html"
+                "uri": "widgets/widgets/chart/configuration_2x2.html"
             }
         },
         {
@@ -165,7 +165,7 @@
                 "description": "[DEV] test stuff",
                 "catalogIconUrl": "img/publogo.png",
                 "previewImageUrl": "img/preview.png",
-                "uri": "widgets/testing_widget/testing.html",
+                "uri": "widgets/widgets/testing_widget/testing.html",
                 "supportedSizes": [
                      {
                             "rowSpan": 1,
@@ -185,7 +185,7 @@
             ],
             "properties": {
                 "name": "Advanced Security Dashboard",
-                "uri": "widgets/hub/hub.html",
+                "uri": "widgets/widgets/hub/hub.html",
                 "iconName": "Shield",
                 "order": 99
             }
@@ -203,29 +203,30 @@
     ],
     "files": [
         {
-            "path": "widgets", "addressable": true
+            "path": "widgets/widgets", "addressable": true
         },
         {
-            "path": "library.js", "addressable": true
+            "path": "widgets/library.js", "addressable": true
         },
         {
-            "path": "styles.css", "addressable": true
+            "path": "widgets/styles.css", "addressable": true
         },
         {
             "path": "img", "addressable": true
         },
         {
-            "path": "dependencyReviewTask", "addressable": true
+            "path": "dependencyReviewTask/index.js", "addressable": true
         },
         {
-            "path": "node_modules/vss-web-extension-sdk/lib",
+            "path": "dependencyReviewTask/task.json", "addressable": true
+        },
+        {
+            "path": "dependencyReviewTask/node_modules/azure-pipelines-task-lib", "addressable": true
+        },
+        {
+            "path": "widgets/node_modules/vss-web-extension-sdk/lib",
             "addressable": true,
             "packagePath": "lib"
-        },
-        {
-            "path": "node_modules/azure-pipelines-task-lib",
-            "addressable": true,
-            "packagePath": "node_modules/azure-pipelines-task-lib"
         }
     ]
 }

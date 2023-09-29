@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <script src="../../lib/VSS.SDK.min.js"></script>
+        <script src="../../../lib/VSS.SDK.min.js"></script>
         <script src="../../library.js"></script>
-        <script src="widget_2x1.js"></script>
+        <script src="widget_1x1.js"></script>
         <link rel="stylesheet" href="../../styles.css" />
 
         <script type="text/javascript">
@@ -17,7 +17,7 @@
                 async function (WidgetHelpers, context)
                 {
                     WidgetHelpers.IncludeWidgetStyles();
-                    VSS.register("GHAzDoWidget", function () {
+                    VSS.register("GHAzDoWidget.1x1", function () {
                         const webContext = VSS.getWebContext();
                         const project = webContext.project;
                         const organization = webContext.account.name;
@@ -50,27 +50,13 @@
     </head>
     <body>
         <div class="widget GHAzDo-widget">
-            <h2 class="ghazdo-title">GitHub Advanced Security Alerts</h2>
+            <h2 class="ghazdo-title" title="">GitHub Advanced Security Alerts</h2>
             <div id="query-info-container" class="column-container">
 
-                <a class="link bolt-link dependency-link" target="_parent" href="">
+                <a class="link bolt-link alert-link" target="_parent" href="">
                     <div class="column">
-                        <h3>Dependencies</h3>
-                        <p class="alertValue dependencyAlertCount"></p>
-                    </div>
-                </a>
-
-                <a class="link bolt-link secret-link" target="_parent" href="">
-                    <div class="column">
-                        <h3>Secrets</h3>
-                        <p class="alertValue secretAlertCount"></p>
-                    </div>
-                </a>
-
-                <a class="link bolt-link code-link" target="_parent" href="">
-                    <div class="column">
-                        <h3>Code</h3>
-                        <p class="alertValue codeAlertCount"></p>
+                        <h3 class="alertType">alertType</h3>
+                        <p class="alertValue alertCount"></p>
                     </div>
                 </a>
             </div>

@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "build": "npm install && cd dependencyReviewTask && npm run build",
+    "build": "npm install",
     "build-not-working": "tsc -p .",
     "package": "tfx extension create --manifest-globs vss-extension-dev.json --rev-version",
     "publish": "tfx extension create",
