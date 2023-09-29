@@ -13,8 +13,8 @@
             });
 
             VSS.require(
-                ["TFS/Dashboards/WidgetHelpers", "VSS/Context", "VSS/Authentication/Services"],
-                async function (WidgetHelpers, context)
+                ["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient", "TFS/Core/RestClient"],
+                async function (Service, WidgetHelpers, context, GitWebApi, RestClient)
                 {
                     function testingLog(message) {
                         var $title = $('h2.ghazdo-title');
@@ -22,7 +22,7 @@
                     }
 
                     WidgetHelpers.IncludeWidgetStyles();
-                    VSS.register("GHAzDoWidget.TestingWidget", function () {
+                    VSS.register("GHAzDoWidget.TestingWidget", async function () {
                         const webContext = VSS.getWebContext();
                         const project = webContext.project;
                         const organization = webContext.account.name;
@@ -36,6 +36,8 @@
 
                         return {
                             load: async function (widgetSettings) {
+                                var settings = logWidgetSettings(widgetSettings, VSS, "testingWidget");
+
                                 documentCollection = "repos"
                                 documentId = "testingWidgetInfo"
                                 let document;
@@ -61,6 +63,47 @@
                                     }
                                 }
 
+                                try {
+                                    const projects = await getProjects(VSS, Service, RestClient);
+                                    consoleLog(`Found [${projects?.length}] projects`);
+                                    // show the project names:
+                                    // make an array
+                                    nameList = "";
+                                    for (let index in projects) {
+                                        const project = projects[index];
+                                        consoleLog(`Checking project: [${JSON.stringify(project)}]`);
+                                        nameList+=(`<li>${project.name}</li>\n`);
+                                        // load the repos for this project:
+                                        try {
+                                            const repos = await getRepos(VSS, Service, GitWebApi, project.name);
+                                            consoleLog(`Found [${repos?.length}] repos for project [${project.name}]`);
+
+                                            if (repos.length > 0) {
+                                                nameList+=(`<ul>\n`);
+                                            }
+                                            for (let repoIndex in repos) {
+                                                const repo = repos[repoIndex];
+                                                const repoAlerts = await getAlerts(organization, project.name, repo.id)
+                                                consoleLog(`Found [${JSON.stringify(repoAlerts)}] dependency alerts for repo [${repo.name}]`)
+                                                nameList+=(`<li>${repo.name} (${repoAlerts.dependencyAlerts}/${repoAlerts.secretAlerts}/${repoAlerts.codeAlerts})</li>\n`);
+                                            }
+
+                                            if (repos.length > 0) {
+                                                nameList+=(`</ul>\n`);
+                                            }
+                                        }
+                                        catch (err) {
+                                            consoleLog(`error loading repos for project ${project.name}` + JSON.stringify(err));
+                                        }
+                                    };
+
+                                    $queryinfocontainer = $('#query-info-container');
+                                    $queryinfocontainer.append(`<ul>${nameList}</ul>`);
+                                }
+                                catch (err) {
+                                    consoleLog('error loading projects: ' + JSON.stringify(err));
+                                }
+
                                 return WidgetHelpers.WidgetStatusHelper.Success();
                             }
                         }
@@ -73,9 +116,9 @@
     </head>
     <body>
         <div class="widget GHAzDo-widget">
-            <h2 class="ghazdo-title" title="">Testing info</h2>
-            <div id="query-info-container" class="column-container">
-
+            <h2 class="ghazdo-title" title="" style="font-size: 15px;text-align: left;">Testing info</h2>
+            <div id="query-info-container" class="column-container" style="font-size: 15px;text-align: left;display: block;">
+                Projects: </br>
             </div>
         </div>
     </body>

@@ -264,10 +264,57 @@ async function removeDocument(VSS, documentCollection, documentId, data) {
     }
 }
 
-async function getRepos(VSS, Service, GitWebApi) {
+// VSS.Require "TFS/Core/RestClient"
+async function getProjects(VSS, Service, CoreRestClient) {
+    consoleLog(`Loading projects from the API`);
+    try {
+        const webContext = VSS.getWebContext();
+        const project = webContext.project;
+        consoleLog(`webContext.project.name: [${project.name}]`);
 
-    const documentCollection = "repos";
-    const documentId = "repositoryList";
+        consoleLog(`CoreRestClient.CoreHttpClient: [${JSON.stringify(CoreRestClient.CoreHttpClient)}]`);
+        consoleLog(`CoreRestClient.CoreHttpClient3: [${JSON.stringify(CoreRestClient.CoreHttpClient3)}]`);
+        const client = Service.getClient(CoreRestClient.CoreHttpClient);
+        if(!client) {
+            consoleLog(`client is null`);
+        }
+
+        let projects = await client.getProjects(null, 1000);
+        consoleLog(`Found these projects: ${JSON.stringify(projects)}`);
+
+        // convert the repos to a simple list of names and ids:
+        projects = projects.map(project => {
+            return {
+                name: project.name,
+                id: project.id
+            }
+        });
+        consoleLog(`Converted projects to: ${JSON.stringify(projects)}`);
+
+        // save the repos to the document store for next time
+        // try {
+        //     await saveDocument(VSS, documentCollection, documentId, projects);
+        // }
+        // catch (err) {
+        //     console.log(`Error saving the available repos to document store: ${JSON.stringify(err)}`);
+        // }
+        return projects;
+    }
+    catch (err) {
+        console.log(`Error loading the available projects: ${err}`);
+        return null;
+    }
+}
+
+async function getRepos(VSS, Service, GitWebApi, projectName) {
+
+    const webContext = VSS.getWebContext();
+    const project = webContext.project;
+    let projectNameForSearch = projectName ? projectName : project.name;
+    consoleLog($`Searching for repos in project with name [${projectNameForSearch}]`);
+
+    const documentCollection = `repos`;
+    const documentId = `repositoryList-${projectNameForSearch}`;
 
     // needed to clean up
     //removeDocument(VSS, documentCollection, documentId);
@@ -297,11 +344,8 @@ async function getRepos(VSS, Service, GitWebApi) {
 
     consoleLog(`Loading repositories from the API`);
     try {
-        const webContext = VSS.getWebContext();
-        const project = webContext.project;
-
         const gitClient = Service.getClient(GitWebApi.GitHttpClient);
-        let repos = await gitClient.getRepositories(project.name);
+        let repos = await gitClient.getRepositories(projectNameForSearch);
         consoleLog(`Found these repos: ${JSON.stringify(repos)}`);
 
         // convert the repos to a simple list of names and ids:

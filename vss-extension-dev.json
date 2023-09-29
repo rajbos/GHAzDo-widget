@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "GHAzDoWidget-DEV",
-    "version": "0.2.79",
+    "version": "0.2.104",
     "public": false,
     "name": "Advanced Security dashboard Widgets [DEV]",
     "description": "[DEV] GitHub Advanced Security for Azure DevOps dashboard widgets",
@@ -168,8 +168,8 @@
                 "uri": "widgets/widgets/testing_widget/testing.html",
                 "supportedSizes": [
                      {
-                            "rowSpan": 1,
-                            "columnSpan": 2
+                            "rowSpan": 4,
+                            "columnSpan": 3
                         }
                     ],
                 "supportedScopes": ["project_team"]

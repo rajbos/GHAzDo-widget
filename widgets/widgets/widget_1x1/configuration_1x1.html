@@ -11,12 +11,15 @@
                     usePlatformStyles: true
                 });
 
-                VSS.require(["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient"],
-                  function (Service, WidgetHelpers, context, GitWebApi) {
+                VSS.require(["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient", "TFS/Core/RestClient"],
+                  function (Service, WidgetHelpers, context, GitWebApi, RestClient) {
                     VSS.register("GHAzDoWidget.Configuration_1x1", async function () {
                         var $repoDropdown = $("#repo-dropdown");
                         var $repoAlertType = $("#repo-alert-type");
                         const repos = await getRepos(VSS, Service, GitWebApi);
+                        const projects = await getProjects(VSS, Service, RestClient);
+
+                        consoleLog(`Found [${repos?.length}] repos and [${projects?.length}] projects`);
 
                         async function reloadWidget(widgetConfigurationContext) {
                             let repo;
@@ -74,7 +77,6 @@
                                 return WidgetHelpers.WidgetStatusHelper.Success();
                             },
                             onSave: async function() {
-                                const repos = await getRepos(VSS, Service, GitWebApi);
                                 let repo;
                                 if (repos) {
                                     // find the repo with this name
@@ -87,7 +89,7 @@
                                             repoAlertType: $repoAlertType.val()
                                         })
                                 };
-                                console.log(`Saving the 1x1 settings with ${JSON.stringify(customSettings)}`)
+                                consoleLog(`Saving the 1x1 settings with ${JSON.stringify(customSettings)}`)
                                 return WidgetHelpers.WidgetConfigurationSave.Valid(customSettings);
                             }
                         }
