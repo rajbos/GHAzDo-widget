@@ -1,7 +1,7 @@
 {
     "$schema": "https://raw.githubusercontent.com/Microsoft/azure-pipelines-task-lib/master/tasks.schema.json",
     "id": "10c1d88a-9d0f-4288-8e37-58762caa0b8b",
-    "name": "GHAzDoDependencyReviewTask",
+    "name": "Advanced-Dependency-Review",
     "friendlyName": "Advanced Security Dependency Review",
     "description": "Scan the branch in your PR for known Dependency issues",
     "helpMarkDown": "Checks the branch in your PR for known Dependency issues",
@@ -10,7 +10,7 @@
     "version": {
         "Major": 0,
         "Minor": 1,
-        "Patch": 17
+        "Patch": 18
     },
     "instanceNameFormat": "Echo $(samplestring)",
     "inputs": [

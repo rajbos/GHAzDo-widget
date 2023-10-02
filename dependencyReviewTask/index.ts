@@ -38,8 +38,8 @@ async function run() {
         const targetBranchName = tl.getVariable('Build.TargetBranchName');
         const url = `https://advsec.dev.azure.com/${orgSlug}/${project}/_apis/AdvancedSecurity/repositories/${repository}/alerts?criteria.alertType=1&criteria.ref=${sourceBranchName}&criteria.onlyDefaultBranchAlerts=true&useDatabaseProvider=true`;
 
-        console.log(`Retrieving alerts with token: [${token}], organization: [${organization}], orgSlug: [${orgSlug}], project: [${project}], sourceBranchName: [${sourceBranchName}], targetBranchName: [${targetBranchName}]`);
-        console.log('url:', url);
+        tl.debug(`Retrieving alerts with token: [${token}], organization: [${organization}], orgSlug: [${orgSlug}], project: [${project}], sourceBranchName: [${sourceBranchName}], targetBranchName: [${targetBranchName}]`);
+        tl.debug(`Full url: ${url}`);
 
         try {
             interface IResult {
@@ -51,7 +51,7 @@ async function run() {
             }
 
             const response: IResponse = await connection.rest.get<IResult>(url);
-            console.log('response: ', JSON.stringify(response));
+            tl.debug(`response: ${JSON.stringify(response)}`);
 
             if (response.result.count == 0) {
                 console.log('No alerts found for this branch');
