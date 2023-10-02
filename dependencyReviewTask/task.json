@@ -4,13 +4,13 @@
     "name": "GHAzDoDependencyReviewTask",
     "friendlyName": "Advanced Security Dependency Review",
     "description": "Scan the branch in your PR for known Dependency issues",
-    "helpMarkDown": "",
+    "helpMarkDown": "Checks the branch in your PR for known Dependency issues",
     "category": "Utility",
     "author": "RobBos",
     "version": {
         "Major": 0,
         "Minor": 1,
-        "Patch": 10
+        "Patch": 17
     },
     "instanceNameFormat": "Echo $(samplestring)",
     "inputs": [

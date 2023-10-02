@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "GHAzDoWidget-DEV",
-    "version": "0.2.104",
+    "version": "0.2.118",
     "public": false,
     "name": "Advanced Security dashboard Widgets [DEV]",
     "description": "[DEV] GitHub Advanced Security for Azure DevOps dashboard widgets",
@@ -221,7 +221,7 @@
             "path": "dependencyReviewTask/task.json", "addressable": true
         },
         {
-            "path": "dependencyReviewTask/node_modules/azure-pipelines-task-lib", "addressable": true
+            "path": "dependencyReviewTask/node_modules/", "addressable": true
         },
         {
             "path": "widgets/node_modules/vss-web-extension-sdk/lib",
