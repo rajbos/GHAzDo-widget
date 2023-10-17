@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="../../lib/VSS.SDK.min.js"></script>
+        <link rel="stylesheet" href="../styles.css" />
+
+        <script type="text/javascript">
+            VSS.init({
+                explicitNotifyLoaded: true,
+                usePlatformStyles: true
+            });
+
+            VSS.require(
+                ["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient", "TFS/Core/RestClient"],
+                async function (Service, WidgetHelpers, context, GitWebApi, RestClient)
+                {
+                    WidgetHelpers.IncludeWidgetStyles();
+                    VSS.register("GHAzDoWidget.TestingWidget", async function () {
+                        const webContext = VSS.getWebContext();
+                        const project = webContext.project;
+                        const organization = webContext.account.name;
+                        const projectId = project.id;
+                        // convert project.name to url encoding
+                        const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26");
+
+                        consoleLog('project id: ' + projectId);
+                        consoleLog('project name: ' + projectName);
+                        consoleLog('organization name: ' + organization);
+
+                        return {
+                            load: async function (widgetSettings) {
+                                return WidgetHelpers.WidgetStatusHelper.Success();
+                            }
+                        }
+                    });
+                    VSS.notifyLoadSucceeded();
+                }
+            );
+        </script>
+
+    </head>
+    <body>
+        Hello build info with GHAzDo info!
+    </body>
+</html>

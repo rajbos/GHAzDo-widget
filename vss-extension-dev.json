@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "GHAzDoWidget-DEV",
-    "version": "0.2.119",
+    "version": "0.2.133",
     "public": false,
     "name": "Advanced Security dashboard Widgets [DEV]",
     "description": "[DEV] GitHub Advanced Security for Azure DevOps dashboard widgets",
@@ -46,6 +46,31 @@
         "url": "https://github.com/rajbos/GHAzDo-widget/issues"
     },
     "contributions": [
+        {
+            "id": "GHAzDoWidget.PR-tab",
+            "type": "ms.vss-web.tab",
+            "targets": [
+                "ms.vss-code-web.pr-tabs"
+            ],
+            "properties": {
+                "name": "GHAzDo Alerts",
+                "title": "GHAzDo Alerts",
+                "uri": "widgets/pr-tab/index.html",
+                "action": "GHAzDo Alerts"
+            }
+        },
+        {
+            "id": "GHAzDoWidget.build-info-tab",
+            "type": "ms.vss-build-web.build-results-tab",
+            "description": "Advanced Security Alerts",
+            "targets": [
+                "ms.vss-build-web.build-results-view"
+            ],
+            "properties": {
+                "name": "Advanced Security Alerts",
+                 "uri": "widgets/build-info/index.html"
+            }
+        },
         {
             "id": "GHAzDoWidget",
             "type": "ms.vss-dashboards-web.widget",
@@ -204,6 +229,12 @@
     "files": [
         {
             "path": "widgets/widgets", "addressable": true
+        },
+        {
+            "path": "widgets/build-info", "addressable": true
+        },
+        {
+            "path": "widgets/pr-tab", "addressable": true
         },
         {
             "path": "widgets/library.js", "addressable": true

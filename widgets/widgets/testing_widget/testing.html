@@ -21,6 +21,11 @@
                         $title.text(message);
                     }
 
+                    function extraLogs(message) {
+                        var $logs = $('#logs');
+                        $logs.append(message + '</br>');
+                    }
+
                     WidgetHelpers.IncludeWidgetStyles();
                     VSS.register("GHAzDoWidget.TestingWidget", async function () {
                         const webContext = VSS.getWebContext();
@@ -64,6 +69,9 @@
                                 }
 
                                 try {
+                                    // log the current time
+                                    extraLogs('start the download: ' + (new Date()).toISOString());
+
                                     const projects = await getProjects(VSS, Service, RestClient);
                                     consoleLog(`Found [${projects?.length}] projects`);
                                     // show the project names:
@@ -99,6 +107,10 @@
 
                                     $queryinfocontainer = $('#query-info-container');
                                     $queryinfocontainer.append(`<ul>${nameList}</ul>`);
+
+                                    // log the current time
+                                    extraLogs('completed the download: ' +  (new Date()).toISOString());
+
                                 }
                                 catch (err) {
                                     consoleLog('error loading projects: ' + JSON.stringify(err));
@@ -115,8 +127,9 @@
 
     </head>
     <body>
-        <div class="widget GHAzDo-widget">
+        <div class="widget GHAzDo-widget" style="overflow-y: scroll;">
             <h2 class="ghazdo-title" title="" style="font-size: 15px;text-align: left;">Testing info</h2>
+            <p id="logs"></p>
             <div id="query-info-container" class="column-container" style="font-size: 15px;text-align: left;display: block;">
                 Projects: </br>
             </div>

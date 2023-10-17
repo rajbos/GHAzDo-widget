@@ -3,14 +3,14 @@
     "id": "10c1d88a-9d0f-4288-8e37-58762caa0b8b",
     "name": "Advanced-Dependency-Review",
     "friendlyName": "Advanced Security Dependency Review",
-    "description": "Scan the branch in your PR for known Dependency issues",
-    "helpMarkDown": "Checks the branch in your PR for known Dependency issues",
+    "description": "Scan the source branch in your PR for known Dependency issues",
+    "helpMarkDown": "Checks the source branch in your PR for known Dependency issues",
     "category": "Utility",
     "author": "RobBos",
     "version": {
         "Major": 0,
         "Minor": 1,
-        "Patch": 18
+        "Patch": 23
     },
     "instanceNameFormat": "Echo $(samplestring)",
     "inputs": [
@@ -28,4 +28,4 @@
             "target": "index.js"
         }
     }
-    }
+}
