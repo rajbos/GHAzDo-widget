@@ -19,12 +19,17 @@ function authenticatedGet(url) {
         .then(authHeader =>
         fetch(url, {
             headers: {
-            "Content-Type": "application/json",
-            Authorization: authHeader
+                "Content-Type": "application/json",
+                Authorization: authHeader
             }
         })
         )
-        .then(x => x.json());
+        .then(response => {
+            console.log(`Headers for [${url}]:`)
+            response.headers.forEach((value, name) => console.log(`${name}: ${value}`));
+
+            return response.json()
+        });
 }
 class AlertType {
     constructor(name, value, display, displayPlural) {
