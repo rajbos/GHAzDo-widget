@@ -272,8 +272,6 @@ async function getProjects(VSS, Service, CoreRestClient) {
         const project = webContext.project;
         consoleLog(`webContext.project.name: [${project.name}]`);
 
-        consoleLog(`CoreRestClient.CoreHttpClient: [${JSON.stringify(CoreRestClient.CoreHttpClient)}]`);
-        consoleLog(`CoreRestClient.CoreHttpClient3: [${JSON.stringify(CoreRestClient.CoreHttpClient3)}]`);
         const client = Service.getClient(CoreRestClient.CoreHttpClient);
         if(!client) {
             consoleLog(`client is null`);
@@ -409,4 +407,8 @@ async function getAlertSeverityCounts(organization, projectName, repoId, alertTy
         consoleLog('error in calling the advec api: ' + err);
     }
     return severityClasses;
+}
+
+function dumpObject(obj) {
+    return JSON.stringify(obj, null, 2)
 }

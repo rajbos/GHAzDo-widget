@@ -26,6 +26,53 @@
                         $logs.append(message + '</br>');
                     }
 
+                    async function showProjectInfo(VSS, Service, GitWebApi, organization, projects) {
+                        // show the project names:
+                        $queryinfocontainer = $('#query-info-container');
+                        $queryinfocontainer.append(`<ul>`);
+                        for (let index in projects) {
+                            const project = projects[index];
+                            consoleLog(`Checking project: [${JSON.stringify(project)}]`);
+                            $queryinfocontainer.append(`<li id="${project.id}">${project.name}</li>\n`);
+                            // load the repos for this project:
+                            try {
+                                //const repos = getRepos(VSS, Service, GitWebApi, project.name);
+                                getRepos(VSS, Service, GitWebApi, project.name).then(function (repos, project) {
+                                    consoleLog(`Got this repos info ${dumpObject(repos)}`);
+                                    consoleLog(`Got this project info ${dumpObject(project)}`);
+                                    consoleLog(`Found [${repos?.length}] repos for project [${project.name}]`);
+
+                                    if (repos.length > 0) {
+                                        const $projectli = $queryinfocontainer.find(`#${project.id}`);
+                                        $projectli.append(`<ul>\n`);
+                                    }
+
+                                    for (let repoIndex in repos) {
+                                        const repo = repos[repoIndex];
+                                        //const repoAlerts = getAlerts(organization, project.name, repo.id)
+                                        getAlerts(organization, project.name, repo.id).then((repoAlerts, project) => {
+                                            const $projectli = $queryinfocontainer.find(`#${project.id}`);
+                                            const $projectul = $projectli.find('ul');
+                                            consoleLog(`Found [${JSON.stringify(repoAlerts)}] dependency alerts for repo [${repo.name}]`)
+                                            $projectul.append(`<li>${repo.name} (${repoAlerts.dependencyAlerts}/${repoAlerts.secretAlerts}/${repoAlerts.codeAlerts})</li>\n`);
+                                        });
+                                    }
+
+                                    if (repos.length > 0) {
+                                        $queryinfocontainer.append(`</ul>\n`);
+                                    }
+                                });
+                            }
+                            catch (err) {
+                                consoleLog(`error loading repos for project ${project.name}` + JSON.stringify(err));
+                            }
+                        };
+                        $queryinfocontainer.append(`</ul>`);
+
+                        // log the current time
+                        extraLogs('done: ' +  (new Date()).toISOString());
+                    }
+
                     WidgetHelpers.IncludeWidgetStyles();
                     VSS.register("GHAzDoWidget.TestingWidget", async function () {
                         const webContext = VSS.getWebContext();
@@ -70,46 +117,12 @@
 
                                 try {
                                     // log the current time
-                                    extraLogs('start the download: ' + (new Date()).toISOString());
+                                    extraLogs('start: ' + (new Date()).toISOString());
 
                                     const projects = await getProjects(VSS, Service, RestClient);
                                     consoleLog(`Found [${projects?.length}] projects`);
-                                    // show the project names:
-                                    // make an array
-                                    nameList = "";
-                                    for (let index in projects) {
-                                        const project = projects[index];
-                                        consoleLog(`Checking project: [${JSON.stringify(project)}]`);
-                                        nameList+=(`<li>${project.name}</li>\n`);
-                                        // load the repos for this project:
-                                        try {
-                                            const repos = await getRepos(VSS, Service, GitWebApi, project.name);
-                                            consoleLog(`Found [${repos?.length}] repos for project [${project.name}]`);
 
-                                            if (repos.length > 0) {
-                                                nameList+=(`<ul>\n`);
-                                            }
-                                            for (let repoIndex in repos) {
-                                                const repo = repos[repoIndex];
-                                                const repoAlerts = await getAlerts(organization, project.name, repo.id)
-                                                consoleLog(`Found [${JSON.stringify(repoAlerts)}] dependency alerts for repo [${repo.name}]`)
-                                                nameList+=(`<li>${repo.name} (${repoAlerts.dependencyAlerts}/${repoAlerts.secretAlerts}/${repoAlerts.codeAlerts})</li>\n`);
-                                            }
-
-                                            if (repos.length > 0) {
-                                                nameList+=(`</ul>\n`);
-                                            }
-                                        }
-                                        catch (err) {
-                                            consoleLog(`error loading repos for project ${project.name}` + JSON.stringify(err));
-                                        }
-                                    };
-
-                                    $queryinfocontainer = $('#query-info-container');
-                                    $queryinfocontainer.append(`<ul>${nameList}</ul>`);
-
-                                    // log the current time
-                                    extraLogs('completed the download: ' +  (new Date()).toISOString());
+                                    showProjectInfo(VSS, Service, GitWebApi, organization, projects)
 
                                 }
                                 catch (err) {
@@ -129,7 +142,7 @@
     <body>
         <div class="widget GHAzDo-widget" style="overflow-y: scroll;">
             <h2 class="ghazdo-title" title="" style="font-size: 15px;text-align: left;">Testing info</h2>
-            <p id="logs"></p>
+            <p id="logs" style="font-size: 15px; text-align: left;"></p>
             <div id="query-info-container" class="column-container" style="font-size: 15px;text-align: left;display: block;">
                 Projects: </br>
             </div>

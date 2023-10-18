@@ -2,44 +2,93 @@
 <html>
     <head>
         <script src="../../lib/VSS.SDK.min.js"></script>
+        <script src="../library.js"></script>
         <link rel="stylesheet" href="../styles.css" />
 
         <script type="text/javascript">
             VSS.init({
                 explicitNotifyLoaded: true,
-                usePlatformStyles: true
+                usePlatformStyles: true,
+                extensionReusedCallback: registerContribution
             });
 
-            VSS.require(
-                ["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient", "TFS/Core/RestClient"],
-                async function (Service, WidgetHelpers, context, GitWebApi, RestClient)
-                {
-                    WidgetHelpers.IncludeWidgetStyles();
-                    VSS.register("GHAzDoWidget.TestingWidget", async function () {
-                        const webContext = VSS.getWebContext();
-                        const project = webContext.project;
-                        const organization = webContext.account.name;
-                        const projectId = project.id;
-                        // convert project.name to url encoding
-                        const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26");
-
-                        consoleLog('project id: ' + projectId);
-                        consoleLog('project name: ' + projectName);
-                        consoleLog('organization name: ' + organization);
-
-                        return {
-                            load: async function (widgetSettings) {
-                                return WidgetHelpers.WidgetStatusHelper.Success();
-                            }
-                        }
-                    });
-                    VSS.notifyLoadSucceeded();
+            function registerContribution(contribution) {
+                updateConfiguration(VSS.getConfiguration());
+                consoleLog(`contribution info:` + dumpObject(contribution));
+                const webContext = VSS.getWebContext();
+                const project = webContext.project;
+                const organization = webContext.account.name;
+                const projectId = project.id;
+                // convert project.name to url encoding
+                const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26");
+                // retrieve build id
+                try {
+                    consoleLog('webContext: ' + dumpObject(webContext));
                 }
-            );
+                catch (err) {
+                    consoleLog('error retrieving build id: ' + err);
+                }
+
+                consoleLog('project id: ' + projectId);
+                consoleLog('project name: ' + projectName);
+                consoleLog('organization name: ' + organization);
+
+                VSS.register(contribution.id, {
+                    pageTitle: getTabTitle,
+
+                    // We set the "dynamic" contribution property to true in the manifest so that it will get the tab name from this function.
+                    name: getTabTitle,
+
+                    updateContext: updateConfiguration,
+
+                    isInvisible: function(state) {
+                        // tab is always visible
+                        return false;
+                    }
+                });
+            }
+
+            function updateConfiguration(tabContext) {
+                consoleLog('inside updateConfiguration');
+                consoleLog('tabContext: ' + dumpObject(tabContext));
+                if (typeof tabContext === "object") {
+                    consoleLog('tabContext is an object');
+                    document.getElementById("configuration-display").textContent += JSON.stringify(tabContext, null, 4);
+                }
+            }
+
+            function getTabTitle(tabContext) {
+                consoleLog('inside getTabTitle');
+                consoleLog('tabContext: ' + dumpObject(tabContext));
+                if (tabContext && tabContext.iterationId) {
+                    console.log('iteration id: ' + tabContext.iterationId);
+                    return "Web Context (iterationId: " + tabContext.iterationId.substr(0, 5) + ")";
+                } else {
+                    return "Web Context";
+                }
+            }
+
+            // Show context info when ready
+            VSS.ready(function () {
+                console.log('inside init');
+                var context = VSS.getWebContext();
+                document.getElementById("context-display").textContent += "Hello, is it me you're looking for? ";
+                registerContribution(VSS.getContribution());
+                VSS.notifyLoadSucceeded();
+            });
         </script>
 
     </head>
     <body>
         Hello build info with GHAzDo info!
+        <p id="context-display"></p>
+
+        <div id="configuration">
+            <h2>Configuration</h2>
+        </div>
+
+        <div id="configuration-display">
+
+        </div>
     </body>
 </html>

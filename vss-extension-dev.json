@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "GHAzDoWidget-DEV",
-    "version": "0.2.133",
+    "version": "0.2.152",
     "public": false,
     "name": "Advanced Security dashboard Widgets [DEV]",
     "description": "[DEV] GitHub Advanced Security for Azure DevOps dashboard widgets",
@@ -54,9 +54,10 @@
             ],
             "properties": {
                 "name": "GHAzDo Alerts",
-                "title": "GHAzDo Alerts",
+                "title": "GHAzDo Alerts - Pull Requests",
                 "uri": "widgets/pr-tab/index.html",
-                "action": "GHAzDo Alerts"
+                "action": "Advanced Security Alerts",
+                "dynamic": true
             }
         },
         {
@@ -68,7 +69,9 @@
             ],
             "properties": {
                 "name": "Advanced Security Alerts",
-                 "uri": "widgets/build-info/index.html"
+                 "uri": "widgets/build-info/index.html",
+                 "title":"GHAzDo Alerts - Build Info (ms.vss-build-web.build-results-view)",
+                 "dynamic": true
             }
         },
         {
