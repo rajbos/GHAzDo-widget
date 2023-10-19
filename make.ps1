@@ -132,10 +132,10 @@ function PushLocalRepoToRemote {
     Set-Location $tempFolder | Out-Null
 
     # add the remote
-    git remote add $repoName $gitUrl | Out-Null
+    git remote add $repoName $gitUrl *> $null
 
     # push to the new remote
-    git push $repoName | Out-Null
+    git push $repoName *> $null
 }
 
 function New-BuildDefinition {
@@ -248,7 +248,7 @@ if ("provision" -eq $command) {
     $AccessToken = New-VSTSAuthenticationToken -PersonalAccessToken $env:AZURE_DEVOPS_CREATE_PAT
     $project = Get-Project -teamProject $projectName -AccessToken $AccessToken
     $createdCount = 0
-    $maxCount = 25
+    $maxCount = 15
     while ($createdCount -lt $maxCount) {
         # create a random list of generated repo names starting with "ghazdo"
         $repoName = "ghazdo-$((Get-Random -Minimum 1000 -Maximum 9999).ToString())"
