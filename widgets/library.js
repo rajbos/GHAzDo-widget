@@ -25,9 +25,11 @@ function authenticatedGet(url) {
         })
         )
         .then(response => {
-            console.log(`Headers for [${url}]:`)
-            response.headers.forEach((value, name) => console.log(`${name}: ${value}`));
-
+            // only show the response headers on httpOk
+            if (response.status == 200) {
+                console.log(`Headers for [${url}]:`)
+                response.headers.forEach((value, name) => console.log(`${name}: ${value}`));
+            }
             return response.json()
         });
 }
@@ -80,11 +82,10 @@ async function getAlerts(organization, projectName, repoId) {
         url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/AdvancedSecurity/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&api-version=7.2-preview.1`;
         consoleLog(`Calling url: [${url}]`);
         const alertResult = await authenticatedGet(url);
-        if (!alertResult) {
+        if (!alertResult || !alertResult.count) {
             consoleLog('alertResult is null');
         }
         else {
-            //consoleLog('alertResult: ' + JSON.stringify(alertResult));
             consoleLog('alertResult count: ' + alertResult.count);
 
             const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name);

@@ -101,7 +101,6 @@
                             $queryinfocontainer.append(`<li id="${project.id}">${project.name}</li>\n`);
                             // load the repos for this project:
                             try {
-                                //const repos = getRepos(VSS, Service, GitWebApi, project.name);
                                 getRepos(VSS, Service, GitWebApi, project.name).then(
                                     repos => showRepoInfo(repos, project, organization)
                                 );
@@ -164,7 +163,6 @@
                                     consoleLog(`Found [${projects?.length}] projects`);
 
                                     showProjectInfo(VSS, Service, GitWebApi, organization, projects)
-
                                 }
                                 catch (err) {
                                     consoleLog('error loading projects: ' + JSON.stringify(err));
@@ -183,8 +181,8 @@
     <body>
         <div class="widget GHAzDo-widget" style="overflow-y: scroll;">
             <h2 class="ghazdo-title" title="" style="font-size: 15px;text-align: left;">Testing info</h2>
-            <p id="startDateTime" style="font-size: 15px; text-align: left;"></p>
-            <p id="endDateTime" style="font-size: 15px; text-align: left;"></p>
+            <p class="startDateTime" style="font-size: 15px; text-align: left;"></p>
+            <p class="endDateTime" style="font-size: 15px; text-align: left;"></p>
 
             <div id="query-values-container" class="column-container">
 
