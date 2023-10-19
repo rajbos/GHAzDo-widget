@@ -128,6 +128,7 @@ function PushLocalRepoToRemote {
         [string] $gitUrl
     )
 
+    Write-Host "Pushing repo contents to remote"
     # go to the temp folder
     Set-Location $tempFolder | Out-Null
 
