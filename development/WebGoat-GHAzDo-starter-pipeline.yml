@@ -112,7 +112,7 @@ steps:
     # For polyglot codebases, multiple languages can be specified in a comma-separated
     # list, such as: 'csharp, javascript, ruby'
     #   https://codeql.github.com/docs/codeql-overview/supported-languages-and-frameworks/
-    languages: 'csharp'
+    languages: 'csharp, javascript'
     # In Code Scanning, Query Suites are packages of queries (scanning rules) that configure the types of
     # security and quality inspections that will be run against your application's codebase.
     #
