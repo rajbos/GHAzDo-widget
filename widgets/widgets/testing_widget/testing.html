@@ -97,11 +97,11 @@
 
                         for (let index in projects) {
                             const project = projects[index];
-                            consoleLog(`Checking project: [${JSON.stringify(project)}]`);
+                            //consoleLog(`Checking project: [${JSON.stringify(project)}]`);
                             $queryinfocontainer.append(`<li id="${project.id}">${project.name}</li>\n`);
                             // load the repos for this project:
                             try {
-                                getRepos(VSS, Service, GitWebApi, project.name).then(
+                                getRepos(VSS, Service, GitWebApi, project.name, false).then(
                                     repos => showRepoInfo(repos, project, organization)
                                 );
                             }
@@ -161,6 +161,8 @@
 
                                     const projects = await getProjects(VSS, Service, RestClient);
                                     consoleLog(`Found [${projects?.length}] projects`);
+                                    // sort the projects based on the name
+                                    projects.sort((a, b) => (a.name > b.name) ? 1 : -1);
 
                                     showProjectInfo(VSS, Service, GitWebApi, organization, projects)
                                 }

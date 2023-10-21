@@ -293,7 +293,7 @@ async function getProjects(VSS, Service, CoreRestClient) {
                 id: project.id
             }
         });
-        consoleLog(`Converted projects to: ${JSON.stringify(projects)}`);
+        //consoleLog(`Converted projects to: ${JSON.stringify(projects)}`);
 
         // save the repos to the document store for next time
         // try {
@@ -310,7 +310,7 @@ async function getProjects(VSS, Service, CoreRestClient) {
     }
 }
 
-async function getRepos(VSS, Service, GitWebApi, projectName) {
+async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
 
     const webContext = VSS.getWebContext();
     const project = webContext.project;
@@ -323,27 +323,30 @@ async function getRepos(VSS, Service, GitWebApi, projectName) {
     // needed to clean up
     //removeDocument(VSS, documentCollection, documentId);
 
-    try {
-        const document = await getSavedDocument(VSS, documentCollection, documentId);
-        consoleLog(`document inside getRepos: ${JSON.stringify(document)}`);
-        if (document || document.data.length > 0) {
-            consoleLog(`Loaded repos from document store. Last updated [${document.lastUpdated}]`);
-            // get the data type of lastUpdated
-            consoleLog(`typeof document.lastUpdated: ${typeof document.lastUpdated}`)
-            // if data.lastUpdated is older then 1 hour, then refresh the repos
-            const diff = new Date() - new Date(document.lastUpdated);
-            const diffHours = Math.floor(diff / 1000 / 60 / 60);
-            if (diffHours < 4) {
-                consoleLog(`Repos are less then 1 hour old, so using the cached version. diffHours [${diffHours}]`);
-                return document.data;
-            }
-            else {
-                consoleLog(`Repos are older then 1 hour, so refreshing the repo list is needed. diffHours [${diffHours}]`);
+    if (useCache) {
+        try {
+            const document = await getSavedDocument(VSS, documentCollection, documentId);
+            consoleLog(`document inside getRepos: ${JSON.stringify(document)}`);
+            if (document || document.data.length > 0) {
+                consoleLog(`Loaded repos from document store. Last updated [${document.lastUpdated}]`);
+                // get the data type of lastUpdated
+                consoleLog(`typeof document.lastUpdated: ${typeof document.lastUpdated}`)
+                // if data.lastUpdated is older then 1 hour, then refresh the repos
+                const diff = new Date() - new Date(document.lastUpdated);
+                const diffHours = Math.floor(diff / 1000 / 60 / 60);
+                const cacheDuration = 4;
+                if (diffHours < cacheDuration) {
+                    consoleLog(`Repos are less then ${cacheDuration} hour old, so using the cached version. diffHours [${diffHours}]`);
+                    return document.data;
+                }
+                else {
+                    consoleLog(`Repos are older then ${cacheDuration} hour, so refreshing the repo list is needed. diffHours [${diffHours}]`);
+                }
             }
         }
-    }
-    catch (err) {
-        console.log(`Error loading the available repos from document store: ${err}`);
+        catch (err) {
+            console.log(`Error loading the available repos from document store: ${err}`);
+        }
     }
 
     consoleLog(`Loading repositories from the API`);
