@@ -231,7 +231,7 @@ function New-VSTSAuthenticationToken {
     return $accesstoken;
 }
 
-if ("" -eq $command) {
+if ("build" -eq $command) {
     Write-Host "Building the dev version"
     # run the default: build the dev version
     $extensionPrefix="RobBos.GHAzDoWidget-DEV-"
@@ -261,6 +261,8 @@ if ("" -eq $command) {
 
     Write-Host "Publishing [$visx]"
     tfx extension publish --vsix $visx  --service-url https://marketplace.visualstudio.com --token "$($env:AZURE_DEVOPS_PAT)"
+
+    exit
 }
 
 if ("provision" -eq $command) {
@@ -303,7 +305,10 @@ if ("provision" -eq $command) {
             Write-Host "Created repo $createdCount/$maxCount [$($repo.name)]"
         }
     }
+
+    Set-Location $PSScriptRoot
+
+    exit
 }
-Set-Location $PSScriptRoot
-# display the current date/time
-Get-Date
+
+Write-Host "Unknown command [$command]"
