@@ -19,7 +19,7 @@ jobs:
       - name: Run script
         shell: pwsh
         env:
-          AZURE_DEVOPS_CREATE_PAT: ${{ secrets.AZURE_DEVOPS_EXT_PAT }}
+          AZURE_DEVOPS_CREATE_PAT: ${{ secrets.AZURE_DEVOPS_CREATE_PAT }}
           TEMP: ${{ runner.temp }}
           PROVISIONCOUNT: 1
         run: |
