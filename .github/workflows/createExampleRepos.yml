@@ -1,9 +1,8 @@
 name: Create Example Repos
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - scaleUp
+  schedule:
+    - cron: "5 23 * * 5, 6"
 
 jobs:
   create:
@@ -21,6 +20,6 @@ jobs:
         env:
           AZURE_DEVOPS_CREATE_PAT: ${{ secrets.AZURE_DEVOPS_CREATE_PAT }}
           TEMP: ${{ runner.temp }}
-          PROVISIONCOUNT: 1
+          PROVISIONCOUNT: ${{ vars.PROVISIONCOUNT }}
         run: |
           .\make.ps1 -command "provision" -provisionCount $env:PROVISIONCOUNT
