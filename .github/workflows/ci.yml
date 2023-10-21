@@ -13,6 +13,11 @@ jobs:
         with:
           node-version: 16
 
+      - name: Install tfx extension
+        run: |
+          npm install
+          npm install -g tfx-cli
+
       - name: Build the extension
         shell: pwsh
         env:
