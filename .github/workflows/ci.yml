@@ -14,4 +14,4 @@ jobs:
           node-version: 16
 
       - run: |
-          ./make.ps1 -command "build"
+          .\make.ps1 -command "build"
