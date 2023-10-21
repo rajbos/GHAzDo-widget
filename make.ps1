@@ -154,6 +154,10 @@ function PushLocalRepoToRemote {
     # go to the temp folder
     Set-Location $tempFolder | Out-Null
 
+    if ($env:CI) {
+        Write-Host "Running in CI mode!"
+    }
+
     Write-Host "gitUrl=[$gitUrl]"
 
     # add the remote
