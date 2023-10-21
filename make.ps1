@@ -141,6 +141,12 @@ function GetSourceRepo {
 
         Write-Host "Copying build.yml from [$PSScriptRoot/development/WebGoat-GHAzDo-starter-pipeline.yml] to [$tempFolder/$subfolder/build.yml]"
         Copy-Item -Path $PSScriptRoot/development/WebGoat-GHAzDo-starter-pipeline.yml -Destination $tempFolder/$subfolder/build.yml -Force
+
+        Write-Host ""
+        Write-Host "New contents of $tempFolder/$subfolder/build.yml"
+        cat $tempFolder/$subfolder/build.yml
+        Write-Host ""
+        Write-Host ""
         git status
 
         git add ./.azure-devops/
