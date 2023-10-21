@@ -11,10 +11,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Configure contributor
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
+
       - name: Run script
         shell: pwsh
         env:
           AZURE_DEVOPS_CREATE_PAT: ${{ secrets.AZURE_DEVOPS_EXT_PAT }}
           TEMP: ${{ runner.temp }}
+          PROVISIONCOUNT: 1
         run: |
-          .\make.ps1 -command "provision" -provisionCount 5
+          .\make.ps1 -command "provision" -provisionCount $env:PROVISIONCOUNT
