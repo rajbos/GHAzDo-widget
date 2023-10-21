@@ -154,11 +154,18 @@ function PushLocalRepoToRemote {
     # go to the temp folder
     Set-Location $tempFolder | Out-Null
 
+
+    Get-Location
+    ls
+
     # add the remote
-    git remote add $repoName $gitUrl *> $null
+    git remote add $repoName $gitUrl #*> $null
 
     # push to the new remote
-    git push $repoName *> $null
+    git push $repoName #*> $null
+
+    # go back to the original folder
+    Set-Location $PSScriptRoot
 }
 
 function New-BuildDefinition {
