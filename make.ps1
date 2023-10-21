@@ -136,9 +136,11 @@ function GetSourceRepo {
         Set-Location $tempFolder
         git status
 
-        git add $tempFolder/$subfolder
-        git add $tempFolder/$subfolder/build.yml
+        git add $subfolder
+        git add $subfolder/build.yml
+        git status
         git commit -m "Updated build.yml"
+        git status
 
         # go back to the original folder
         Set-Location $PSScriptRoot
