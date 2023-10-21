@@ -137,7 +137,7 @@ function GetSourceRepo {
         git status
 
         git add $tempFolder/$subfolder
-        #git add $tempFolder/$subfolder/build.yml
+        git add $tempFolder/$subfolder/build.yml
         git commit -m "Updated build.yml"
 
         # go back to the original folder
