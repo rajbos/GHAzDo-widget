@@ -133,14 +133,15 @@ function GetSourceRepo {
         Write-Host "Copying build.yml from [$PSScriptRoot/development/WebGoat-GHAzDo-starter-pipeline.yml] to [$tempFolder/$subfolder/build.yml]"
         Copy-Item -Path $PSScriptRoot/development/WebGoat-GHAzDo-starter-pipeline.yml -Destination $tempFolder/$subfolder/build.yml -Force
 
-        Write-Host ""
-        Write-Host "New contents of $tempFolder/$subfolder/build.yml"
-        cat $tempFolder/$subfolder/build.yml
+        Set-Location $tempFolder
         git status
 
         git add $tempFolder/$subfolder
         #git add $tempFolder/$subfolder/build.yml
         git commit -m "Updated build.yml"
+
+        # go back to the original folder
+        Set-Location $PSScriptRoot
     }
 }
 
