@@ -15,7 +15,6 @@ jobs:
 
       - name: Install tfx extension
         run: |
-          npm install
           npm install -g tfx-cli
 
       - name: Build the extension
