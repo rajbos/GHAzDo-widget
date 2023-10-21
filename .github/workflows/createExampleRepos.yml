@@ -1,6 +1,9 @@
 name: Create Example Repos
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - scaleUp
 
 jobs:
   create:
