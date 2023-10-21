@@ -1,5 +1,6 @@
 # load the given arguments
 param(
+    [ValidateSet("provision", "build", "")]
     [string]$command = "provision",
     [int] $provisionCount = 1
 )
