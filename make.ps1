@@ -125,10 +125,12 @@ function GetSourceRepo {
 
         $subfolder = ".azure-devops"
         if (!(Test-Path "$tempFolder/$($subfolder)")) {
+            Write-Host "Creating [$tempFolder/$($subfolder)]"
             New-Item -ItemType Directory -Path "$tempFolder/$($subfolder)" | Out-Null
         }
 
         # overwrite the file in the .azure-devops/build.yml with the content from /development/WebGoat-GHAzDo-starter-pipeline.yml file
+        Write-Host "Copying build.yml from [$PSScriptRoot/development/WebGoat-GHAzDo-starter-pipeline.yml] to [$tempFolder/$subfolder/build.yml]"
         Copy-Item -Path $PSScriptRoot/development/WebGoat-GHAzDo-starter-pipeline.yml -Destination $tempFolder/$subfolder/build.yml -Force
         git status
 
