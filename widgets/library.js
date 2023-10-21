@@ -14,6 +14,7 @@ function getAuthHeader() {
     });
 }
 
+let callCounter = 0;
 function authenticatedGet(url) {
     return getAuthHeader()
         .then(authHeader =>
@@ -26,10 +27,11 @@ function authenticatedGet(url) {
         )
         .then(response => {
             // only show the response headers on httpOk
-            if (response.status == 200) {
-                console.log(`Headers for [${url}]:`)
+            if (response.status == !200 && response.status == !400 && response.status == !403) {
+                console.log(`Headers for [${url}] with status [${response.status}]:`)
                 response.headers.forEach((value, name) => console.log(`${name}: ${value}`));
             }
+            callCounter++;
             return response.json()
         });
 }
@@ -83,10 +85,10 @@ async function getAlerts(organization, projectName, repoId) {
         consoleLog(`Calling url: [${url}]`);
         const alertResult = await authenticatedGet(url);
         if (!alertResult || !alertResult.count) {
-            consoleLog('alertResult is null');
+            //consoleLog('alertResult is null');
         }
         else {
-            consoleLog('alertResult count: ' + alertResult.count);
+            //consoleLog('alertResult count: ' + alertResult.count);
 
             const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name);
             const secretAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.SECRET.name);
