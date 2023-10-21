@@ -1,6 +1,7 @@
 # load the given arguments
 param(
-    [string]$command = "provision"
+    [string]$command = "provision",
+    [int] $provisionCount = 1
 )
 
 # global settings
@@ -278,7 +279,7 @@ if ("provision" -eq $command) {
     $AccessToken = New-VSTSAuthenticationToken -PersonalAccessToken $env:AZURE_DEVOPS_CREATE_PAT
     $project = Get-Project -teamProject $projectName -AccessToken $AccessToken
     $createdCount = 0
-    $maxCount = 1
+    $maxCount = $provisionCount
     while ($createdCount -lt $maxCount) {
         # create a random list of generated repo names starting with "ghazdo"
         $repoName = "ghazdo-$((Get-Random -Minimum 1000 -Maximum 9999).ToString())"
@@ -303,6 +304,6 @@ if ("provision" -eq $command) {
         }
     }
 }
-
+Set-Location $PSScriptRoot
 # display the current date/time
 Get-Date

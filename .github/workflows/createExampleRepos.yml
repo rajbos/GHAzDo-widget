@@ -1,0 +1,16 @@
+name: Create Example Repos
+on:
+  workflow_dispatch:
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run script
+        shell: pwsh
+        env:
+          AZURE_DEVOPS_CREATE_PAT: ${{ secrets.AZURE_DEVOPS_EXT_PAT }}
+        run: |
+          .\make.ps1 -command "provision" -provisionCount 5
