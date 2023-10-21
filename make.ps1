@@ -149,8 +149,8 @@ function GetSourceRepo {
         Write-Host ""
         git status
 
-        git add ./.azure-devops/
-        git add ./.azure-devops/build.yml
+        git add $tempFolder/$subfolder
+        git add $tempFolder/$subfolder/build.yml
         git commit -m "Updated build.yml"
     }
 }
