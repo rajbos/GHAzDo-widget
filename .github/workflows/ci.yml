@@ -1,7 +1,9 @@
 name: CI
 
 on:
-  push:
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -13,10 +15,13 @@ jobs:
         with:
           node-version: 16
 
-      - run: |
-          npm install
+      - name: Install tfx extension
+        run: |
           npm install -g tfx-cli
 
-      - name:  Create extension
-        run: tfx extension create --manifest-globs vss-extension-dev.json --rev-version
-      #- run: npm run test
+      - name: Build the extension
+        shell: pwsh
+        env:
+          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+        run: |
+          .\make.ps1 -command "build"

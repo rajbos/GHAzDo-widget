@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <script src="../lib/VSS.SDK.min.js"></script>
-    <script src="../library.js"></script>
+    <script src="../../../lib/VSS.SDK.min.js"></script>
+    <script src="../../library.js"></script>
     <script src="chart.js"></script>
-    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="../../styles.css" />
 </head>
 <body>
     <script lang="">
@@ -111,8 +111,13 @@
                                         }
                                         break;
                                     default:
-                                        $title.text(`Advanced Security Alerts Trend`)
-                                        renderTrendLine(organization, projectName, repoId, $container, chartService, widgetSettings.size);
+                                        try {
+                                            $title.text(`Advanced Security Alerts Trend`)
+                                            renderTrendLine(organization, projectName, repoId, $container, chartService, widgetSettings.size);
+                                        }
+                                        catch (err) {
+                                            consoleLog(`Error loading the alerts trend: ${err}`);
+                                        }
                                         break;
                                 }
                             }
@@ -129,10 +134,6 @@
                     });
             VSS.notifyLoadSucceeded();
         });
-
-        function consoleLog(message) {
-                console.log(message);
-            }
     </script>
 
     <div class="widget">

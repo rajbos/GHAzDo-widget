@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="../../../lib/VSS.SDK.min.js"></script>
+        <script src="../../library.js"></script>
+        <script src="../widget_1x1/widget_1x1.js"></script>
+        <link rel="stylesheet" href="../../styles.css" />
+
+        <script type="text/javascript">
+            VSS.init({
+                explicitNotifyLoaded: true,
+                usePlatformStyles: true
+            });
+
+            VSS.require(
+                ["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient", "TFS/Core/RestClient"],
+                async function (Service, WidgetHelpers, context, GitWebApi, RestClient)
+                {
+                    function setAlertValues(alerts, organization, projectName) {
+                        const linkBase = `https://dev.azure.com/${organization}/${projectName}/_security`;
+                        // set the alert counts
+                        var dependencyAlertCount = $('p.dependencyAlertCount');
+                        var currentValue = parseInt(dependencyAlertCount.text());
+                        dependencyAlertCount.text(currentValue + alerts.dependencyAlerts);
+                        const dependencyLinkValue = `${linkBase}?_t=dependencies`;
+                        const dependencyLink = $('a.dependency-link');
+                        //dependencyLink.attr('href', dependencyLinkValue);
+
+                        var secretAlertCount = $('p.secretAlertCount');
+                        var currentValue = parseInt(secretAlertCount.text());
+                        secretAlertCount.text(currentValue + alerts.secretAlerts);
+                        const secretLinkValue = `${linkBase}?_t=secrets`;
+                        const secretLink = $('a.secret-link');
+                        //secretLink.attr('href', secretLinkValue);
+
+                        var codeAlertCount = $('p.codeAlertCount');
+                        var currentValue = parseInt(codeAlertCount.text());
+                        codeAlertCount.text(currentValue + alerts.codeAlerts);
+                        const codeLinkValue = `${linkBase}?_t=codescanning`;
+                        const codeLink = $('a.code-link');
+                        //codeLink.attr('href', codeLinkValue);
+
+                        var endDateTime = $('p.endDateTime');
+                        endDateTime.text('end: ' + (new Date()).toISOString());
+                    }
+
+                    function testingLog(message) {
+                        var $title = $('h2.ghazdo-title');
+                        $title.text += message + '</br>';
+                    }
+
+                    function extraLogs(message) {
+                        var $logs = $('#logs');
+                        $logs.append(message + '</br>');
+                    }
+
+                    function showAlertInfo(organization, project, repo, repoAlerts, $queryinfocontainer) {
+                        const $projectli = $queryinfocontainer.find(`#${project.id}`);
+                        const $projectul = $projectli.find('ul');
+                        consoleLog(`Found [${JSON.stringify(repoAlerts)}] dependency alerts for repo [${repo.name}]`)
+                        $projectul.append(`<li>${repo.name} (${repoAlerts.dependencyAlerts}/${repoAlerts.secretAlerts}/${repoAlerts.codeAlerts})</li>\n`);
+
+                        setAlertValues(repoAlerts, organization, project.name);
+                    }
+
+                    function showRepoInfo(repos, project, organization) {
+                        consoleLog(`Found [${repos?.length}] repos for project [${project.name}]`);
+
+                        var repoCounter = $('p.repoCount');
+                        var currentValue = parseInt(repoCounter.text());
+                        repoCounter.text(currentValue + repos.length);
+
+                        if (repos.length > 0) {
+                            const $projectli = $queryinfocontainer.find(`#${project.id}`);
+                            $projectli.append(`<ul>\n`);
+                        }
+
+                        for (let repoIndex in repos) {
+                            const repo = repos[repoIndex];
+                            getAlerts(organization, project.name, repo.id).then(
+                                repoAlerts => showAlertInfo(organization, project, repo, repoAlerts, $queryinfocontainer)
+                            );
+                        }
+
+                        if (repos.length > 0) {
+                            $queryinfocontainer.append(`</ul>\n`);
+                        }
+                    }
+
+                    async function showProjectInfo(VSS, Service, GitWebApi, organization, projects) {
+                        // show the project names:
+                        $queryinfocontainer = $('#query-info-container');
+                        $queryinfocontainer.append(`<ul>`);
+
+                        var procjectCounter = $('p.projectCount');
+                        procjectCounter.text(projects.length);
+
+                        for (let index in projects) {
+                            const project = projects[index];
+                            //consoleLog(`Checking project: [${JSON.stringify(project)}]`);
+                            $queryinfocontainer.append(`<li id="${project.id}">${project.name}</li>\n`);
+                            // load the repos for this project:
+                            try {
+                                getRepos(VSS, Service, GitWebApi, project.name, false).then(
+                                    repos => showRepoInfo(repos, project, organization)
+                                );
+                            }
+                            catch (err) {
+                                consoleLog(`error loading repos for project ${project.name}` + JSON.stringify(err));
+                            }
+                        };
+                        $queryinfocontainer.append(`</ul>`);
+                    }
+
+                    WidgetHelpers.IncludeWidgetStyles();
+                    VSS.register("GHAzDoWidget.TestingWidget", async function () {
+                        const webContext = VSS.getWebContext();
+                        const project = webContext.project;
+                        const organization = webContext.account.name;
+                        const projectId = project.id;
+                        // convert project.name to url encoding
+                        const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26");
+
+                        consoleLog('project id: ' + projectId);
+                        consoleLog('project name: ' + projectName);
+                        consoleLog('organization name: ' + organization);
+
+                        return {
+                            load: async function (widgetSettings) {
+                                var settings = logWidgetSettings(widgetSettings, VSS, "testingWidget");
+
+                                documentCollection = "repos"
+                                documentId = "testingWidgetInfo"
+                                let document;
+                                try {
+                                    document = await getSavedDocument(VSS, documentCollection, documentId);
+                                    testingLog('lastUpdated: ' + JSON.stringify(document.lastUpdated));
+                                }
+                                catch (err) {
+                                    testingLog('error getting document: ' + JSON.stringify(err));
+                                }
+
+                                if (!document) {
+                                    // store a new document for testing
+                                    document = {
+                                        "testing": "testing"
+                                    }
+                                    try {
+                                        await saveDocument(VSS, documentCollection, documentId, document);
+                                        testingLog('document saved');
+                                    }
+                                    catch (err) {
+                                        testingLog('error saving document: ' + JSON.stringify(err));
+                                    }
+                                }
+
+                                try {
+                                    // log the current time
+                                    var startDateTime = $('p.startDateTime');
+                                    startDateTime.text('start: ' + (new Date()).toISOString());
+
+                                    const projects = await getProjects(VSS, Service, RestClient);
+                                    consoleLog(`Found [${projects?.length}] projects`);
+                                    // sort the projects based on the name
+                                    projects.sort((a, b) => (a.name > b.name) ? 1 : -1);
+
+                                    showProjectInfo(VSS, Service, GitWebApi, organization, projects)
+                                }
+                                catch (err) {
+                                    consoleLog('error loading projects: ' + JSON.stringify(err));
+                                }
+
+                                return WidgetHelpers.WidgetStatusHelper.Success();
+                            }
+                        }
+                    });
+                    VSS.notifyLoadSucceeded();
+                }
+            );
+        </script>
+
+    </head>
+    <body>
+        <div class="widget GHAzDo-widget" style="overflow-y: scroll;">
+            <h2 class="ghazdo-title" title="" style="font-size: 15px;text-align: left;">Testing info</h2>
+            <p class="startDateTime" style="font-size: 15px; text-align: left;"></p>
+            <p class="endDateTime" style="font-size: 15px; text-align: left;"></p>
+
+            <div id="query-values-container" class="column-container">
+
+                <a class="link bolt-link project-link" target="_parent" href="">
+                    <div class="column">
+                        <h3>Projects</h3>
+                        <p class="alertValue projectCount">0</p>
+                    </div>
+                </a>
+
+                <a class="link bolt-link repo-link" target="_parent" href="">
+                    <div class="column">
+                        <h3>Repos</h3>
+                        <p class="alertValue repoCount">0</p>
+                    </div>
+                </a>
+
+                <a class="link bolt-link dependency-link" target="_parent" href="">
+                    <div class="column">
+                        <h3>Dependencies</h3>
+                        <p class="alertValue dependencyAlertCount">0</p>
+                    </div>
+                </a>
+
+                <a class="link bolt-link secret-link" target="_parent" href="">
+                    <div class="column">
+                        <h3>Secrets</h3>
+                        <p class="alertValue secretAlertCount">0</p>
+                    </div>
+                </a>
+
+                <a class="link bolt-link code-link" target="_parent" href="">
+                    <div class="column">
+                        <h3>Code</h3>
+                        <p class="alertValue codeAlertCount">0</p>
+                    </div>
+                </a>
+            </div>
+            <div id="query-info-container" class="column-container" style="font-size: 15px;text-align: left;display: block;">
+                Projects: </br>
+            </div>
+        </div>
+    </body>
+</html>

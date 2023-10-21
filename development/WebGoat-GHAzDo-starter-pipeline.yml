@@ -1,0 +1,174 @@
+# Welcome to the Starter Pipeline for GitHub Advanced Security for Azure DevOps (GHAzDo)
+#
+# This pipeline enables two core features of GHAzDo for your repository:
+#
+# - Dependency Scanning, which will examine your application's package manifests
+# to find and alert on any vulnerable dependencies you may be using, and
+#
+# - Code Scanning, which performs static analysis (SAST) of your application's source
+# code to identify certain types of security vulnerabilities, along with additional,
+# optional quality checks.
+#
+# Setting up Secret Scanning doesn't require a special pipeline or build task, and is easy to
+# do in one click. This guide includes a walkthrough on how to enable secret scanning in the
+# section below.
+#
+# To learn more about GHAzDo, visit the following links:
+#   https://azure.microsoft.com/en-us/products/devops/github-advanced-security
+#   https://learn.microsoft.com/en-us/azure/devops/repos/security/configure-github-advanced-security-features
+#
+#
+# == PREREQUISITES ==
+#
+# Before GHAzDo features can be configured for your Azure DevOps repository, you must first
+# enable Advanced Security in repository settings.
+#
+# To do this, follow the steps at the link below:
+#
+# https://learn.microsoft.com/en-us/azure/devops/repos/security/configure-github-advanced-security-features?view=azure-devops&tabs=yaml#enable-github-advanced-security
+#
+# == Secret Scanning ==
+#
+# While you're in the Repository Settings, be sure to enable Secret Scanning as well.
+# This feature protects you and your team from accidentally leaking secrets (such as
+# API keys, credentials, and so on) in your repository.
+#
+# Setup is easy, and only takes one click:
+#   https://learn.microsoft.com/en-us/azure/devops/repos/security/configure-github-advanced-security-features?view=azure-devops&tabs=yaml#set-up-secret-scanning
+#
+# To learn more about how Secret Scanning alerts are surfaced in Azure DevOps, along with
+# the types of secrets it's able to detect, check out the following documentation:
+#   https://learn.microsoft.com/en-us/azure/devops/repos/security/github-advanced-security-secret-scanning?view=azure-devops
+#
+#
+# == INSTALLATION ==
+#
+# To install this pipeline in your Azure DevOps repository, simply create a new pipeline with the contents of this file.
+# Remember to read through and adjust and parameters (such as default branch trigger, languages scanned, and query suites
+# used) to suit your project and preferences.
+#
+# If you haven't worked with Azure Pipelines before, you can find a helpful guide on creating
+# your first pipeline at the link below. Just replace the content of the starter pipeline with
+# the contents of this file.
+#
+#  https://learn.microsoft.com/en-us/azure/devops/pipelines/create-first-pipeline?view=azure-devops&tabs=net%2Ctfs-2018-2%2Cbrowser
+#
+#
+# == MORE INFORMATION ==
+#
+# == Billing ==
+#
+# In some cases, billing for Advanced Security may need to be enabled and/or approved before
+# GHAzDo can be turned on in your repository.
+#
+# To access results and use GitHub Advanced Security for Azure DevOps features, you need a license.
+# Each active committer to at least one repository with Advanced Security enabled consumes one license.
+# A committer is considered active if they have committed code to the repository within the last 90 days.
+#
+# To learn more about billing for Advanced Security in Azure DevOps, take a look at the following
+# documentation:
+#
+#   https://learn.microsoft.com/en-us/azure/devops/repos/security/github-advanced-security-billing?view=azure-devops
+#
+# == Permissions and Access Levels for Advanced Security ==
+#
+# GHAzDo includes extra sets of permissions to give customers more control over
+# Advanced Security results and management.
+#
+# If you'd like to learn more about these permissions, take a look at the following
+# documentation:
+#   https://learn.microsoft.com/en-us/azure/devops/repos/security/github-advanced-security-permissions?view=azure-devops
+
+
+trigger:
+# Set the following to the name of your default branch, or
+# to the name of the branch against which you'd like to use
+# GHAzDo's security tools and features.
+# Typically, default branch names will be "master" or "main"
+- master
+- main
+
+# By default, this pipeline uses the ubuntu-latest agent, which is
+# hosted by Microsoft and runs in the cloud. This should work absolutely
+# perfectly in the vast majority of cases.
+
+# If your application has a particular requirement in terms of a self-hosted
+# agent used to run builds, you will need to install and configure the Code Scanning
+# toolchain on that host. To do this, follow the "Extra prerequisites for self-hosted agents"
+# steps at the following link:
+#   https://learn.microsoft.com/en-us/azure/devops/repos/security/configure-github-advanced-security-features?view=azure-devops&tabs=yaml#extra-prerequisites-for-self-hosted-agents
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+
+# The next tasks in this pipeline set up Code Scanning.
+# To learn more about configuring Code Scanning features
+# in Azure Pipelines, visit the following link:
+#   https://learn.microsoft.com/en-us/azure/devops/repos/security/configure-github-advanced-security-features?view=azure-devops&tabs=yaml#set-up-code-scanning
+- task: AdvancedSecurity-Codeql-Init@1
+  inputs:
+    # Code Scanning supports csharp, cpp, go, java, javascript, python, and ruby.
+    # For polyglot codebases, multiple languages can be specified in a comma-separated
+    # list, such as: 'csharp, javascript, ruby'
+    #   https://codeql.github.com/docs/codeql-overview/supported-languages-and-frameworks/
+    languages: 'csharp, javascript'
+    # In Code Scanning, Query Suites are packages of queries (scanning rules) that configure the types of
+    # security and quality inspections that will be run against your application's codebase.
+    #
+    # As of 30 June 2023, Code Scanning in GHAzDo supports four query suites: default, security-extended,
+    # security-experimental, and security-and-quality.
+    #
+    # Each of these provides varying levels of features, coverage, and accuracy. We recommend starting with
+    # either the security-extended or default query suites.
+    #
+    # To learn more about query suites, a core part of the technology behind Code Scanning, visit the link
+    # below:
+    #   https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/built-in-codeql-query-suites
+    querysuite: 'security-and-quality'
+
+# Code Scanning's Autobuild task does its best to build your application automatically.
+# In many cases, this will work. However, you should remove this task if:
+# - Your application has special build requirements. In this case, replace the autobuild task with
+# the typical steps required to build your application.
+# - Your application is written in a non-compiled language, such as JavaScript or Ruby. In this
+# case, the Autobuild task will have nothing to do (although leaving it in will not cause a failure)
+
+# Note that if you're only building a subset of your repository, the preview version of GHAzDo may not
+# be able to contend with the unbuilt portions of your application. This is a known limitation of GHAzDo
+# Code Scanning as of 30 June 2023, but is subject to change.
+
+# To learn more about Autobuild, take a look at the following CodeQL documentation:
+#   https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-the-codeql-workflow-for-compiled-languages#about-autobuild-for-codeql
+- task: AdvancedSecurity-Codeql-Autobuild@1
+
+- task: AdvancedSecurity-Codeql-Analyze@1
+  #inputs:
+    # GHAzDo allows you to configure certain performance-related settings for the Code Scanning analysis engine.
+    #
+    # The defaults should be fine for most cases. However, if your codebase is particularly large, or if Code Scanning
+    # requires more memory or threads to complete the analysis of your application, you may configure these below.
+    #
+    # ram: 4096
+    # You can pass 0 to use one thread per core on the machine, or -N to leave N cores unused (except still use at least one thread).
+    # threads: 0
+
+# The following task performs and publishes the results of GHAzDo Dependency Scanning
+# to the Advanced Security overview for your repository. Configuring any additional
+# options isn't necessary for this task.
+# This task needs to run AFTER the build if the language that is used outputs the dependency manifest in the build (e.g. C#)
+#
+# To learn more about how Dependency Scanning results are surfaced in Azure DevOps,
+# check out the documentation:
+#   https://learn.microsoft.com/en-us/azure/devops/repos/security/github-advanced-security-dependency-scanning?view=azure-devops
+#
+- task: AdvancedSecurity-Dependency-Scanning@1
+
+# The following task publishes the results of the Code Scanning process to the
+# Advanced Security overview for your repository. Configuring any additional
+# options isn't necessary for this task.
+#
+# To learn more about how Code Scanning results are surfaced in Azure DevOps,
+# check out the documentation:
+#   https://learn.microsoft.com/en-us/azure/devops/repos/security/github-advanced-security-code-scanning?view=azure-devops
+- task: AdvancedSecurity-Publish@1

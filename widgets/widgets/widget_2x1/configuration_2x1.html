@@ -1,9 +1,9 @@
 <!DOCTYPE html>
     <html xmlns="http://www.w3.org/1999/xhtml">
         <head>
-            <script src="../lib/VSS.SDK.min.js"></script>
-            <script src="../library.js"></script>
-            <link rel="stylesheet" href="../styles.css" />
+            <script src="../../../lib/VSS.SDK.min.js"></script>
+            <script src="../../library.js"></script>
+            <link rel="stylesheet" href="../../styles.css" />
 
             <script type="text/javascript">
                 VSS.init({
@@ -13,15 +13,15 @@
 
                 VSS.require(["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient"],
                   function (Service, WidgetHelpers, context, GitWebApi) {
-                    VSS.register("GHAzDoWidget.Configuration", function () {
+                    VSS.register("GHAzDoWidget.Configuration", async function () {
                         var $repoDropdown = $("#repo-dropdown");
+                        // get a repos in this project
+                        const repos = await getRepos(VSS, Service, GitWebApi);
 
                         return {
                             load: async function (widgetSettings, widgetConfigurationContext) {
-                                var settings = JSON.parse(widgetSettings.customSettings.data);
-                                console.log(`Loading the 2x1 settings with ${JSON.stringify(settings)}`)
+                                var settings = logWidgetSettings(widgetSettings, VSS, "2x1");
 
-                                const repos = await getRepos(VSS, Service, GitWebApi);
                                 // add all repos as selection options to the dropdown
                                 if (repos) {
                                     // add a top option to select no repo

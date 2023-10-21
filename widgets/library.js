@@ -19,12 +19,19 @@ function authenticatedGet(url) {
         .then(authHeader =>
         fetch(url, {
             headers: {
-            "Content-Type": "application/json",
-            Authorization: authHeader
+                "Content-Type": "application/json",
+                Authorization: authHeader
             }
         })
         )
-        .then(x => x.json());
+        .then(response => {
+            // only show the response headers on httpOk
+            if (response.status == 200) {
+                console.log(`Headers for [${url}]:`)
+                response.headers.forEach((value, name) => console.log(`${name}: ${value}`));
+            }
+            return response.json()
+        });
 }
 class AlertType {
     constructor(name, value, display, displayPlural) {
@@ -75,17 +82,21 @@ async function getAlerts(organization, projectName, repoId) {
         url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/AdvancedSecurity/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&api-version=7.2-preview.1`;
         consoleLog(`Calling url: [${url}]`);
         const alertResult = await authenticatedGet(url);
-        //consoleLog('alertResult: ' + JSON.stringify(alertResult));
-        consoleLog('alertResult count: ' + alertResult.count);
+        if (!alertResult || !alertResult.count) {
+            consoleLog('alertResult is null');
+        }
+        else {
+            consoleLog('alertResult count: ' + alertResult.count);
 
-        const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name);
-        const secretAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.SECRET.name);
-        const codeAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.CODE.name);
+            const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name);
+            const secretAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.SECRET.name);
+            const codeAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.CODE.name);
 
-        values.count = alertResult.count;
-        values.dependencyAlerts = dependencyAlerts.length;
-        values.secretAlerts = secretAlerts.length;
-        values.codeAlerts = codeAlerts.length;
+            values.count = alertResult.count;
+            values.dependencyAlerts = dependencyAlerts.length;
+            values.secretAlerts = secretAlerts.length;
+            values.codeAlerts = codeAlerts.length;
+        }
     }
     catch (err) {
         consoleLog('error in calling the advec api: ' + err);
@@ -193,20 +204,178 @@ function consoleLog(message) {
     console.log(message);
 }
 
-async function getRepos(VSS, Service, GitWebApi) {
+function logWidgetSettings(widgetSettings, VSS, description) {
+    const settings = JSON.parse(widgetSettings.customSettings.data);
+    const extensionContext = VSS.getExtensionContext();
+    console.log(`Loading the ${description} with settings: ${JSON.stringify(settings)}, for extension version [${extensionContext.version}]`)
+
+    return settings
+}
+
+function getWidgetId(VSS) {
+    const extensionContext = VSS.getExtensionContext();
+    const widgetId = extensionContext.publisherId + "." + extensionContext.extensionId + ".GHAzDoWidget.Configuration";
+    return widgetId;
+}
+
+async function getSavedDocument(VSS, documentCollection, documentId) {
+    const dataService = await VSS.getService(VSS.ServiceIds.ExtensionData);
+    try {
+        const document = await dataService.getDocument(documentCollection, documentId);
+        consoleLog(`Loaded document with Id: [${document.id}] and lastUpdated: [${document.lastUpdated}]`);
+        consoleLog(`Document data: ${JSON.stringify(document)}`);
+        return document;
+    }
+    catch (err) {
+        console.log(`Error loading the document with Id [${documentId}]: ${JSON.stringify(err)}`);
+        return null;
+    }
+}
+
+async function saveDocument(VSS, documentCollection, documentId, data) {
+
+    try {
+        //delete document in case it exists, there is an issue with setDocument it seems
+        removeDocument(VSS, documentCollection, documentId);
+    }
+    catch (err) {
+        console.log(`Tried deleting the document with Id [${documentId}]: ${JSON.stringify(err)}`);
+    }
+
+    const dataService = await VSS.getService(VSS.ServiceIds.ExtensionData);
+    try {
+        const document = {
+            id: documentId,
+            lastUpdated: new Date(),
+            data: data,
+            __eTag: -1
+        }
+
+        const savedDocument = await dataService.setDocument(documentCollection, document);
+        consoleLog(`New document was created with Id: [${savedDocument.id}]`);
+    }
+    catch (err) {
+        console.log(`Error saving the document with Id [${documentId}]: ${JSON.stringify(err)}`);
+    }
+}
+
+async function removeDocument(VSS, documentCollection, documentId, data) {
+    const dataService = await VSS.getService(VSS.ServiceIds.ExtensionData);
+    try {
+        await dataService.deleteDocument(documentCollection, documentId);
+        consoleLog(`Document with Id: [${documentId}] was deleted`);
+    }
+    catch (err) {
+        console.log(`Error deleting the document with Id [${documentId}]: ${JSON.stringify(err)}`);
+    }
+}
+
+// VSS.Require "TFS/Core/RestClient"
+async function getProjects(VSS, Service, CoreRestClient) {
+    consoleLog(`Loading projects from the API`);
     try {
         const webContext = VSS.getWebContext();
         const project = webContext.project;
+        consoleLog(`webContext.project.name: [${project.name}]`);
 
-        // todo: load the available repos in this project
+        const client = Service.getClient(CoreRestClient.CoreHttpClient);
+        if(!client) {
+            consoleLog(`client is null`);
+        }
+
+        let projects = await client.getProjects(null, 1000);
+        consoleLog(`Found these projects: ${JSON.stringify(projects)}`);
+
+        // convert the repos to a simple list of names and ids:
+        projects = projects.map(project => {
+            return {
+                name: project.name,
+                id: project.id
+            }
+        });
+        //consoleLog(`Converted projects to: ${JSON.stringify(projects)}`);
+
+        // save the repos to the document store for next time
+        // try {
+        //     await saveDocument(VSS, documentCollection, documentId, projects);
+        // }
+        // catch (err) {
+        //     console.log(`Error saving the available repos to document store: ${JSON.stringify(err)}`);
+        // }
+        return projects;
+    }
+    catch (err) {
+        console.log(`Error loading the available projects: ${err}`);
+        return null;
+    }
+}
+
+async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
+
+    const webContext = VSS.getWebContext();
+    const project = webContext.project;
+    let projectNameForSearch = projectName ? projectName : project.name;
+    consoleLog($`Searching for repos in project with name [${projectNameForSearch}]`);
+
+    const documentCollection = `repos`;
+    const documentId = `repositoryList-${projectNameForSearch}`;
+
+    // needed to clean up
+    //removeDocument(VSS, documentCollection, documentId);
+
+    if (useCache) {
+        try {
+            const document = await getSavedDocument(VSS, documentCollection, documentId);
+            consoleLog(`document inside getRepos: ${JSON.stringify(document)}`);
+            if (document || document.data.length > 0) {
+                consoleLog(`Loaded repos from document store. Last updated [${document.lastUpdated}]`);
+                // get the data type of lastUpdated
+                consoleLog(`typeof document.lastUpdated: ${typeof document.lastUpdated}`)
+                // if data.lastUpdated is older then 1 hour, then refresh the repos
+                const diff = new Date() - new Date(document.lastUpdated);
+                const diffHours = Math.floor(diff / 1000 / 60 / 60);
+                const cacheDuration = 4;
+                if (diffHours < cacheDuration) {
+                    consoleLog(`Repos are less then ${cacheDuration} hour old, so using the cached version. diffHours [${diffHours}]`);
+                    return document.data;
+                }
+                else {
+                    consoleLog(`Repos are older then ${cacheDuration} hour, so refreshing the repo list is needed. diffHours [${diffHours}]`);
+                }
+            }
+        }
+        catch (err) {
+            console.log(`Error loading the available repos from document store: ${err}`);
+        }
+    }
+
+    consoleLog(`Loading repositories from the API`);
+    try {
         const gitClient = Service.getClient(GitWebApi.GitHttpClient);
-        repos = await gitClient.getRepositories(project.name);
-        console.log(`Found these repos: ${JSON.stringify(repos)}`);
+        let repos = await gitClient.getRepositories(projectNameForSearch);
+        consoleLog(`Found these repos: ${JSON.stringify(repos)}`);
+
+        // convert the repos to a simple list of names and ids:
+        repos = repos.map(repo => {
+            return {
+                name: repo.name,
+                id: repo.id
+            }
+        });
+        consoleLog(`Converted repos to: ${JSON.stringify(repos)}`);
+
+        // save the repos to the document store for next time
+        try {
+            await saveDocument(VSS, documentCollection, documentId, repos);
+        }
+        catch (err) {
+            console.log(`Error saving the available repos to document store: ${JSON.stringify(err)}`);
+        }
         return repos;
     }
     catch (err) {
         console.log(`Error loading the available repos: ${err}`);
-        return [];
+        return null;
     }
 }
 
@@ -247,4 +416,8 @@ async function getAlertSeverityCounts(organization, projectName, repoId, alertTy
         consoleLog('error in calling the advec api: ' + err);
     }
     return severityClasses;
+}
+
+function dumpObject(obj) {
+    return JSON.stringify(obj, null, 2)
 }

@@ -1,9 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <script src="../lib/VSS.SDK.min.js"></script>
-        <script src="../library.js"></script>
-        <script src="widget_1x1.js"></script>
+        <script src="../../lib/VSS.SDK.min.js"></script>
         <link rel="stylesheet" href="../styles.css" />
 
         <script type="text/javascript">
@@ -13,11 +11,11 @@
             });
 
             VSS.require(
-                ["TFS/Dashboards/WidgetHelpers", "VSS/Context", "VSS/Authentication/Services"],
-                async function (WidgetHelpers, context)
+                ["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient", "TFS/Core/RestClient"],
+                async function (Service, WidgetHelpers, context, GitWebApi, RestClient)
                 {
                     WidgetHelpers.IncludeWidgetStyles();
-                    VSS.register("GHAzDoWidget.1x1", function () {
+                    VSS.register("GHAzDoWidget.TestingWidget", async function () {
                         const webContext = VSS.getWebContext();
                         const project = webContext.project;
                         const organization = webContext.account.name;
@@ -31,14 +29,7 @@
 
                         return {
                             load: async function (widgetSettings) {
-                                await loadWidget(widgetSettings, organization, projectName);
-
                                 return WidgetHelpers.WidgetStatusHelper.Success();
-                            },
-                            reload: async function (widgetSettings) {
-                                consoleLog('reload with widgetSettings: ' + JSON.stringify(widgetSettings));
-                                await loadWidget(widgetSettings, organization, projectName);
-                                return;
                             }
                         }
                     });
@@ -49,17 +40,6 @@
 
     </head>
     <body>
-        <div class="widget GHAzDo-widget">
-            <h2 class="ghazdo-title" title="">GitHub Advanced Security Alerts</h2>
-            <div id="query-info-container" class="column-container">
-
-                <a class="link bolt-link alert-link" target="_parent" href="">
-                    <div class="column">
-                        <h3 class="alertType">alertType</h3>
-                        <p class="alertValue alertCount"></p>
-                    </div>
-                </a>
-            </div>
-        </div>
+        Hello PR tab with GHAzDo info!
     </body>
 </html>

@@ -1,0 +1,14 @@
+
+// this was the specific stuff, but then it seems to break on the next item, and then the next, and so on
+{
+    "path": "dependencyReviewTask/node_modules/azure-pipelines-task-lib", "addressable": true
+},
+{
+    "path": "dependencyReviewTask/node_modules/azure-devops-node-api", "addressable": true
+},
+{
+    "path": "dependencyReviewTask/node_modules/shelljs", "addressable": true
+},
+{
+    "path": "dependencyReviewTask/node_modules/glob", "addressable": true
+},
