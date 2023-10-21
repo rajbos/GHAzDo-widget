@@ -13,8 +13,8 @@ $apiVersionAdvSec = "api-version=7.1-preview.1"
 $sourceRepo = "https://github.com/rajbos/WebGoat.NETCore.git"
 $sourceRepo2 = "https://xpirit@dev.azure.com/xpirit/TailWindTraders/_git/TailwindTraders-Website"
 
-$tempFolder = "$($env:TEMP)\ghazdo-WebGoatSource"
-$tempFolder2 = "$($env:TEMP)\ghazdo-TailwindSource"
+$tempFolder = "$($env:TEMP)/ghazdo-WebGoatSource"
+$tempFolder2 = "$($env:TEMP)/ghazdo-TailwindSource"
 
 function Get-Project {
     param (
