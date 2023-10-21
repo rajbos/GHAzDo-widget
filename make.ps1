@@ -132,15 +132,11 @@ function GetSourceRepo {
         # overwrite the file in the .azure-devops/build.yml with the content from /development/WebGoat-GHAzDo-starter-pipeline.yml file
         Write-Host "Copying build.yml from [$PSScriptRoot/development/WebGoat-GHAzDo-starter-pipeline.yml] to [$tempFolder/$subfolder/build.yml]"
         Copy-Item -Path $PSScriptRoot/development/WebGoat-GHAzDo-starter-pipeline.yml -Destination $tempFolder/$subfolder/build.yml -Force
-
         Set-Location $tempFolder
-        git status
 
         git add $subfolder
         git add $subfolder/build.yml
-        git status
         git commit -m "Updated build.yml"
-        git status
 
         # go back to the original folder
         Set-Location $PSScriptRoot
