@@ -158,7 +158,7 @@ function PushLocalRepoToRemote {
         Write-Host "Running in CI mode!"
         # configure the PAT we have inside the remote url
         #sample url: https://xpirit@dev.azure.com/xpirit/GHAzDo%20Internal%20Bootcamp/_git/ghazdo-4664
-        $gitUrl = $gitUrl -replace "https://", "https://xpirit@$($env:AZURE_DEVOPS_CREATE_PAT)@"
+        $gitUrl = $gitUrl -replace "https://", "https://$($env:AZURE_DEVOPS_CREATE_PAT)@"
     }
 
     # add the remote
