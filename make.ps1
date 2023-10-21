@@ -154,9 +154,7 @@ function PushLocalRepoToRemote {
     # go to the temp folder
     Set-Location $tempFolder | Out-Null
 
-
-    Get-Location
-    ls
+    Write-Host "gitUrl=[$gitUrl]"
 
     # add the remote
     git remote add $repoName $gitUrl #*> $null
