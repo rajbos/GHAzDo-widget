@@ -14,7 +14,7 @@ function getAuthHeader() {
     });
 }
 
-let callCounter = 0;
+var callCounter = 0;
 function authenticatedGet(url) {
     return getAuthHeader()
         .then(authHeader =>

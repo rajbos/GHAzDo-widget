@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <script type="text/javascript">
+            // declare global variables
+            ///var callCounter = 0;
+        </script>
+
         <script src="../../../lib/VSS.SDK.min.js"></script>
         <script src="../../library.js"></script>
         <script src="../widget_1x1/widget_1x1.js"></script>
@@ -40,8 +45,12 @@
                         const codeLink = $('a.code-link');
                         //codeLink.attr('href', codeLinkValue);
 
+                        // keep track of global state:
                         var endDateTime = $('p.endDateTime');
                         endDateTime.text('end: ' + (new Date()).toISOString());
+
+                        var callCounterEl = $('#ghazdo-title');
+                        callCounterEl.text(`Call counter: ${callCounter}`);
                     }
 
                     function testingLog(message) {
@@ -94,9 +103,6 @@
 
                         var procjectCounter = $('p.projectCount');
                         procjectCounter.text(projects.length);
-
-                        var callCounterEl = $('#ghazdo-title');
-                        callCounterEl.text(`Call counter: ${callCounter}`);
 
                         for (let index in projects) {
                             const project = projects[index];
