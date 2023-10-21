@@ -15,5 +15,6 @@ jobs:
         shell: pwsh
         env:
           AZURE_DEVOPS_CREATE_PAT: ${{ secrets.AZURE_DEVOPS_EXT_PAT }}
+          TEMP: ${{ runner.temp }}
         run: |
           .\make.ps1 -command "provision" -provisionCount 5
