@@ -2,7 +2,7 @@
 param(
     [ValidateSet("provision", "build", "")]
     [string]$command = "provision",
-    [int] $provisionCount = 1
+    [int] $provisionCount = 100
 )
 
 # global settings
@@ -184,8 +184,19 @@ function New-BuildDefinition {
         [string] $AccessToken
     )
 
-    $url = "$baseurl/$teamProject/_apis/pipelines?$apiVersion"
+    $pipeLineName = "$repoName Build"
 
+    # check if the build definition already exists
+    $url = "$baseurl/$teamProject/_apis/pipelines?$apiVersion"
+    $response = Invoke-RestMethod -Uri $url -Headers @{Authorization = $AccessToken} -ContentType "application/json" -Method Get
+    $exisingBuild = $response.value | Where-Object { $_.name -eq $pipeLineName }
+    if ($exisingBuild) {
+        # stop running
+        Write-Host "Build definition [$pipeLineName] already exists"
+        return
+    }
+
+    # now create the build definition
     $body = @{
         configuration = @{
             type = "yaml"
@@ -197,42 +208,42 @@ function New-BuildDefinition {
             }
         }
         folder = "/.azure-devops"
-        name = "$repoName Build"
+        name = $pipeLineName
     }
 
-        try
-        {
-            $json = (ConvertTo-Json $body)
-            $response = Invoke-RestMethod -Uri $url -Headers @{Authorization = $AccessToken} -ContentType "application/json" -Method Post -Body $json
+    try
+    {
+        $json = (ConvertTo-Json $body)
+        $response = Invoke-RestMethod -Uri $url -Headers @{Authorization = $AccessToken} -ContentType "application/json" -Method Post -Body $json
 
-            Write-Host "Created build definition [$($response.name)]"
-            $pipelineId = $response.id
+        Write-Host "Created build definition [$($response.name)]"
+        $pipelineId = $response.id
 
-            # trigger the pipeline to run
-            $url = "$baseurl/$teamProject/_apis/pipelines/$pipelineId/runs?$apiVersion"
-            $triggerBody = @{
-                resources = @{
-                    repositories= @{
-                        self = @{
-                            refName = "refs/heads/main"
-                        }
+        # trigger the pipeline to run
+        $url = "$baseurl/$teamProject/_apis/pipelines/$pipelineId/runs?$apiVersion"
+        $triggerBody = @{
+            resources = @{
+                repositories= @{
+                    self = @{
+                        refName = "refs/heads/main"
                     }
                 }
             }
-            $json = (ConvertTo-Json $triggerBody -Depth 10)
-            $response = Invoke-RestMethod -Uri $url -Headers @{Authorization = $AccessToken} -ContentType "application/json" -Method Post -Body $json
+        }
+        $json = (ConvertTo-Json $triggerBody -Depth 10)
+        $response = Invoke-RestMethod -Uri $url -Headers @{Authorization = $AccessToken} -ContentType "application/json" -Method Post -Body $json
 
-            Write-Host "Triggered build definition [$($response.name)]"
+        Write-Host "Triggered build definition [$($response.name)]"
+    }
+    catch {
+        if ($_.Exception.Message -like "*already exists*") {
+            Write-Debug "Build definition [$($response.name)] already exists"
         }
-        catch {
-            if ($_.Exception.Message -like "*already exists*") {
-                Write-Debug "Build definition [$($response.name)] already exists"
-            }
-            else {
-                Write-Host "Error creating build definition [$($response.name)]"
-                Write-Host $_.Exception.Message
-            }
+        else {
+            Write-Host "Error creating build definition [$($response.name)]" # repo was still empty
+            Write-Host $_.Exception.Message
         }
+    }
 }
 
 function New-VSTSAuthenticationToken {
@@ -312,7 +323,7 @@ if ("provision" -eq $command) {
         $repo = Get-Repository -teamProject $projectName -repoName $repoName -AccessToken $AccessToken
 
         if ($repo) {
-            Write-Host "Repo [$repoName] already exists"
+            Write-Host "Repo [$repoName] already exists with repoUrl [$($repo.remoteUrl)]"
 
              # enable GHAzDo on this repo
             Update-GHAzDoSettings -teamProject $projectName -repoName $repoName -AccessToken $AccessToken -repoId $repo.id -projectId $project.id

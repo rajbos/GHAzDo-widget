@@ -70,7 +70,7 @@ function GetAlertTypeFromValue(value) {
 }
 
 async function getAlerts(organization, projectName, repoId) {
-    consoleLog('getAlerts');
+    //consoleLog('getAlerts');
 
     let values = {
         count: 0,
@@ -80,9 +80,17 @@ async function getAlerts(organization, projectName, repoId) {
     };
 
     try {
+        // first check if GHAzDo is enabled or not
+        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/Management/repositories/${repoId}/enablement?api-version=7.2-preview.1`
+        const featuresEnabledResult = await authenticatedGet(url);
+        if (!featuresEnabledResult || !featuresEnabledResult.advSecEnabled) {
+            consoleLog(`GHAzDo is not enabled for this repo [${repoId}]`);
+            return values;
+        }
+
         // no pagination option, so just get the first 5000 alerts
         url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/AdvancedSecurity/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&api-version=7.2-preview.1`;
-        consoleLog(`Calling url: [${url}]`);
+        //consoleLog(`Calling url: [${url}]`);
         const alertResult = await authenticatedGet(url);
         if (!alertResult || !alertResult.count) {
             //consoleLog('alertResult is null');
@@ -278,7 +286,6 @@ async function getProjects(VSS, Service, CoreRestClient) {
     try {
         const webContext = VSS.getWebContext();
         const project = webContext.project;
-        consoleLog(`webContext.project.name: [${project.name}]`);
 
         const client = Service.getClient(CoreRestClient.CoreHttpClient);
         if(!client) {
@@ -286,7 +293,7 @@ async function getProjects(VSS, Service, CoreRestClient) {
         }
 
         let projects = await client.getProjects(null, 1000);
-        consoleLog(`Found these projects: ${JSON.stringify(projects)}`);
+        //consoleLog(`Found these projects: ${JSON.stringify(projects)}`);
 
         // convert the repos to a simple list of names and ids:
         projects = projects.map(project => {
@@ -355,7 +362,8 @@ async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
     try {
         const gitClient = Service.getClient(GitWebApi.GitHttpClient);
         let repos = await gitClient.getRepositories(projectNameForSearch);
-        consoleLog(`Found these repos: ${JSON.stringify(repos)}`);
+        callCounter++;
+        //consoleLog(`Found these repos: ${JSON.stringify(repos)}`);
 
         // convert the repos to a simple list of names and ids:
         repos = repos.map(repo => {
@@ -364,7 +372,7 @@ async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
                 id: repo.id
             }
         });
-        consoleLog(`Converted repos to: ${JSON.stringify(repos)}`);
+        //consoleLog(`Converted repos to: ${JSON.stringify(repos)}`);
 
         // save the repos to the document store for next time
         try {
@@ -392,7 +400,7 @@ async function getAlertSeverityCounts(organization, projectName, repoId, alertTy
     try {
         // todo: filter on alertType
         url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/AdvancedSecurity/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=7.2-preview.1`;
-        consoleLog(`Calling url: [${url}]`);
+        //consoleLog(`Calling url: [${url}]`);
         const alertResult = await authenticatedGet(url);
         //consoleLog('alertResult: ' + JSON.stringify(alertResult));
         consoleLog(`total alertResult count: ${alertResult.count} for alertType [${alertType.name}]`);
@@ -420,6 +428,9 @@ async function getAlertSeverityCounts(organization, projectName, repoId, alertTy
     return severityClasses;
 }
 
-function dumpObject(obj) {
+function dumpObject(obj, showMethods = false) {
+    if (showMethods) {
+        return JSON.stringify(obj, Object.getOwnPropertyNames(obj), 2)
+    }
     return JSON.stringify(obj, null, 2)
 }
