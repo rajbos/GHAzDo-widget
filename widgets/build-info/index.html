@@ -9,12 +9,15 @@
             VSS.init({
                 explicitNotifyLoaded: true,
                 usePlatformStyles: true,
-                extensionReusedCallback: registerContribution
+                //extensionReusedCallback: registerContribution
             });
 
-            function registerContribution(contribution) {
+
+            function registerContribution(contribution, TFS_Build_WebAPI) {
+                console.log('inside registerContribution, TFS_Build_WebAPI: ' + dumpObject(TFS_Build_WebAPI));
+
                 updateConfiguration(VSS.getConfiguration());
-                consoleLog(`contribution info:` + dumpObject(contribution));
+                //consoleLog(`contribution info:` + dumpObject(contribution));
                 const webContext = VSS.getWebContext();
                 const project = webContext.project;
                 const organization = webContext.account.name;
@@ -23,7 +26,8 @@
                 const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26");
                 // retrieve build id
                 try {
-                    consoleLog('webContext: ' + dumpObject(webContext));
+                    // contains: project, collection, account, host, and team info (with their GUID)
+                    //consoleLog('webContext: ' + dumpObject(webContext));
                 }
                 catch (err) {
                     consoleLog('error retrieving build id: ' + err);
@@ -42,7 +46,8 @@
                     updateContext: updateConfiguration,
 
                     isInvisible: function(state) {
-                        // tab is always visible
+                        console.log('inside VSS.register.isInvisible');
+                        // tab is always visible # todo: only visible when GHAzDo is enabled!
                         return false;
                     }
                 });
@@ -69,8 +74,11 @@
             }
 
             // Show context info when ready
-            VSS.ready(function () {
+            VSS.ready(function (TFS_Build_webApi) {
                 console.log('inside init');
+
+                console.log('TFS_Build_webApi: ' + dumpObject(TFS_Build_webApi));
+
                 var context = VSS.getWebContext();
                 document.getElementById("context-display").textContent += "Hello, is it me you're looking for? ";
                 registerContribution(VSS.getContribution());
