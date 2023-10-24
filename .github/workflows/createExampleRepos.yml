@@ -29,7 +29,7 @@ jobs:
           MANUAL_RUN: ${{ github.event.inputs.provisionCount }}
         run: |
           # check if we are running from workflow_dispatch
-          if ("${{ github.event_name }}" == 'workflow_dispatch') {
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
             # override the provision count from the input
             $env:PROVISIONCOUNT = $env:MANUAL_RUN
           }
