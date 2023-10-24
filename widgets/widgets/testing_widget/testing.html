@@ -64,12 +64,14 @@
                     }
 
                     function showAlertInfo(organization, project, repo, repoAlerts, $queryinfocontainer) {
-                        const $projectli = $queryinfocontainer.find(`#${project.id}`);
-                        const $projectul = $projectli.find('ul');
-                        //consoleLog(`Found [${JSON.stringify(repoAlerts)}] dependency alerts for repo [${repo.name}]`)
-                        $projectul.append(`<li>${repo.name} (${repoAlerts.dependencyAlerts}/${repoAlerts.secretAlerts}/${repoAlerts.codeAlerts})</li>\n`);
+                        if (repoAlerts) {
+                            const $projectli = $queryinfocontainer.find(`#${project.id}`);
+                            const $projectul = $projectli.find('ul');
+                            //consoleLog(`Found [${JSON.stringify(repoAlerts)}] dependency alerts for repo [${repo.name}]`)
+                            $projectul.append(`<li>${repo.name} (${repoAlerts.dependencyAlerts}/${repoAlerts.secretAlerts}/${repoAlerts.codeAlerts})</li>\n`);
 
-                        setAlertValues(repoAlerts, organization, project.name);
+                            setAlertValues(repoAlerts, organization, project.name);
+                        }
                     }
 
                     function showRepoInfo(repos, project, organization) {
@@ -77,18 +79,43 @@
 
                         var repoCounter = $('p.repoCount');
                         var currentValue = parseInt(repoCounter.text());
-                        repoCounter.text(currentValue + repos.length);
+                        var repoCount = 0
+                        if (Array.isArray(repos)) {
+                            repoCount = repos.length;
+                        }
+                        else {
+                            repoCount = 1;
+                        }
+                        repoCounter.text(currentValue + repoCount);
 
-                        if (repos.length > 0) {
+                        if (repoCount > 0) {
                             const $projectli = $queryinfocontainer.find(`#${project.id}`);
                             $projectli.append(`<ul>\n`);
                         }
 
                         for (let repoIndex in repos) {
                             const repo = repos[repoIndex];
+                            // call and let the promise handle the rest
                             getAlerts(organization, project.name, repo.id).then(
                                 repoAlerts => showAlertInfo(organization, project, repo, repoAlerts, $queryinfocontainer)
                             );
+                            // wait .250 seconds between calls
+                            setTimeout(() => { }, 250);
+                            // new Promise((resolve, reject) => {
+                            //     getAlerts(organization, project.name, repo.id)
+                            //         .then(repoAlerts => {
+                            //             resolve(repoAlerts);
+                            //         })
+                            //         .catch(error => {
+                            //             reject(error);
+                            //         });
+                            // }).then(repoAlerts => {
+                            //     showAlertInfo(organization, project, repo, repoAlerts, $queryinfocontainer);
+                            // }).catch(error => {
+                            //     console.error(error);
+                            // });
+                            // wait .2 seconds between calls
+                            //sleep(200);
                         }
 
                         if (repos.length > 0) {

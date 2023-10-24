@@ -82,37 +82,46 @@ async function getAlerts(organization, projectName, repoId) {
     try {
         // first check if GHAzDo is enabled or not
         url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/Management/repositories/${repoId}/enablement?api-version=7.2-preview.1`
-        const featuresEnabledResult = await authenticatedGet(url);
-        if (!featuresEnabledResult || !featuresEnabledResult.advSecEnabled) {
-            consoleLog(`GHAzDo is not enabled for this repo [${repoId}]`);
-            return values;
-        }
+        //const featuresEnabledResult = await authenticatedGet(url);
 
-        // no pagination option, so just get the first 5000 alerts
-        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/AdvancedSecurity/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&api-version=7.2-preview.1`;
-        //consoleLog(`Calling url: [${url}]`);
-        const alertResult = await authenticatedGet(url);
-        if (!alertResult || !alertResult.count) {
-            //consoleLog('alertResult is null');
-        }
-        else {
-            //consoleLog('alertResult count: ' + alertResult.count);
+        //authenticatedGet(url).then(featuresEnabledResult => {
+            // if (!featuresEnabledResult || !featuresEnabledResult.advSecEnabled) {
+            //     consoleLog(`GHAzDo is not enabled for this repo [${repoId}]`);
+            //     return values;
+            // }
 
-            const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name);
-            const secretAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.SECRET.name);
-            const codeAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.CODE.name);
+            // todo: use pagination option, now: get the first 5000 alerts
+            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/AdvancedSecurity/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&api-version=7.2-preview.1`;
+            //consoleLog(`Calling url: [${url}]`);
+            const alertResult = await authenticatedGet(url);
+            //authenticatedGet(url).then(alertResult => {
+                if (!alertResult || !alertResult.count) {
+                    //consoleLog('alertResult is null');
+                    return values;
+                }
+                else {
+                    //consoleLog('alertResult count: ' + alertResult.count);
 
-            values.count = alertResult.count;
-            values.dependencyAlerts = dependencyAlerts.length;
-            values.secretAlerts = secretAlerts.length;
-            values.codeAlerts = codeAlerts.length;
-        }
+                    const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name);
+                    const secretAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.SECRET.name);
+                    const codeAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.CODE.name);
+
+                    values.count = alertResult.count;
+                    values.dependencyAlerts = dependencyAlerts.length;
+                    values.secretAlerts = secretAlerts.length;
+                    values.codeAlerts = codeAlerts.length;
+
+                    return values;
+                }
+            //});
+        //});
+
     }
     catch (err) {
         consoleLog('error in calling the advec api: ' + err);
     }
 
-    return values;
+    //return values;
 }
 
 async function getAlertsTrendLines(organization, projectName, repoId) {
