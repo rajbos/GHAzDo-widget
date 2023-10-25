@@ -15,6 +15,7 @@ function getAuthHeader() {
 }
 
 var callCounter = 0;
+var getAlertCalls = [];
 function authenticatedGet(url) {
     return getAuthHeader()
         .then(authHeader =>
@@ -69,9 +70,11 @@ function GetAlertTypeFromValue(value) {
     }
 }
 
-async function getAlerts(organization, projectName, repoId) {
+async function getAlerts(organization, project, repo) {
     //consoleLog('getAlerts');
 
+    const projectName = project.name;
+    const repoId = repo.id;
     let values = {
         count: 0,
         dependencyAlerts: 0,
@@ -82,13 +85,13 @@ async function getAlerts(organization, projectName, repoId) {
     try {
         // first check if GHAzDo is enabled or not
         url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/Management/repositories/${repoId}/enablement?api-version=7.2-preview.1`
-        //const featuresEnabledResult = await authenticatedGet(url);
+        const featuresEnabledResult = await authenticatedGet(url);
 
         //authenticatedGet(url).then(featuresEnabledResult => {
-            // if (!featuresEnabledResult || !featuresEnabledResult.advSecEnabled) {
-            //     consoleLog(`GHAzDo is not enabled for this repo [${repoId}]`);
-            //     return values;
-            // }
+            if (!featuresEnabledResult || !featuresEnabledResult.advSecEnabled) {
+                consoleLog(`GHAzDo is not enabled for this repo [${repoId}]`);
+                return (organization, project, repo, values);
+            }
 
             // todo: use pagination option, now: get the first 5000 alerts
             url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/AdvancedSecurity/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&api-version=7.2-preview.1`;
@@ -97,7 +100,7 @@ async function getAlerts(organization, projectName, repoId) {
             //authenticatedGet(url).then(alertResult => {
                 if (!alertResult || !alertResult.count) {
                     //consoleLog('alertResult is null');
-                    return values;
+                    return (organization, project, repo, values);
                 }
                 else {
                     //consoleLog('alertResult count: ' + alertResult.count);
@@ -111,7 +114,7 @@ async function getAlerts(organization, projectName, repoId) {
                     values.secretAlerts = secretAlerts.length;
                     values.codeAlerts = codeAlerts.length;
 
-                    return values;
+                    return (organization, project, repo, values);
                 }
             //});
         //});
@@ -367,7 +370,7 @@ async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
         }
     }
 
-    consoleLog(`Loading repositories from the API`);
+    //consoleLog(`Loading repositories from the API`);
     try {
         const gitClient = Service.getClient(GitWebApi.GitHttpClient);
         let repos = await gitClient.getRepositories(projectNameForSearch);
@@ -378,17 +381,21 @@ async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
         repos = repos.map(repo => {
             return {
                 name: repo.name,
-                id: repo.id
+                id: repo.id,
+                size: repo.size,
             }
         });
         //consoleLog(`Converted repos to: ${JSON.stringify(repos)}`);
 
-        // save the repos to the document store for next time
-        try {
-            await saveDocument(VSS, documentCollection, documentId, repos);
-        }
-        catch (err) {
-            console.log(`Error saving the available repos to document store: ${JSON.stringify(err)}`);
+
+        if (useCache) {
+            // save the repos to the document store for next time
+            try {
+                await saveDocument(VSS, documentCollection, documentId, repos);
+            }
+            catch (err) {
+                console.log(`Error saving the available repos to document store: ${JSON.stringify(err)}`);
+            }
         }
         return repos;
     }

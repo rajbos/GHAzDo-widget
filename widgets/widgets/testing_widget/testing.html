@@ -21,36 +21,37 @@
                 ["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient", "TFS/Core/RestClient"],
                 async function (Service, WidgetHelpers, context, GitWebApi, RestClient)
                 {
-                    function setAlertValues(alerts, organization, projectName) {
-                        const linkBase = `https://dev.azure.com/${organization}/${projectName}/_security`;
+                    const dependencyAlertCount = $('p.dependencyAlertCount');
+                    const secretAlertCount = $('p.secretAlertCount');
+                    const callCounterEl = $('#ghazdo-title');
+                    const secretLink = $('a.secret-link');
+                    const codeLink = $('a.code-link');
+                    const codeAlertCount = $('p.codeAlertCount');
+                    const endDateTime = $('p.endDateTime');
+
+                    function setAlertValues(alerts, organization, projectName, doing) {
+                        //const linkBase = `https://dev.azure.com/${organization}/${projectName}/_security`;
                         // set the alert counts
-                        var dependencyAlertCount = $('p.dependencyAlertCount');
                         var currentValue = parseInt(dependencyAlertCount.text());
                         dependencyAlertCount.text(currentValue + alerts.dependencyAlerts);
-                        const dependencyLinkValue = `${linkBase}?_t=dependencies`;
-                        const dependencyLink = $('a.dependency-link');
+                        //const dependencyLinkValue = `${linkBase}?_t=dependencies`;
+                        //const dependencyLink = $('a.dependency-link');
                         //dependencyLink.attr('href', dependencyLinkValue);
 
-                        var secretAlertCount = $('p.secretAlertCount');
                         var currentValue = parseInt(secretAlertCount.text());
                         secretAlertCount.text(currentValue + alerts.secretAlerts);
-                        const secretLinkValue = `${linkBase}?_t=secrets`;
-                        const secretLink = $('a.secret-link');
+                        //const secretLinkValue = `${linkBase}?_t=secrets`;
                         //secretLink.attr('href', secretLinkValue);
 
-                        var codeAlertCount = $('p.codeAlertCount');
                         var currentValue = parseInt(codeAlertCount.text());
                         codeAlertCount.text(currentValue + alerts.codeAlerts);
-                        const codeLinkValue = `${linkBase}?_t=codescanning`;
-                        const codeLink = $('a.code-link');
+                        //const codeLinkValue = `${linkBase}?_t=codescanning`;
                         //codeLink.attr('href', codeLinkValue);
 
                         // keep track of global state:
-                        var endDateTime = $('p.endDateTime');
                         endDateTime.text('end: ' + (new Date()).toISOString());
 
-                        var callCounterEl = $('#ghazdo-title');
-                        callCounterEl.text(`Call counter: ${callCounter}`);
+                        callCounterEl.text(`Call counter: ${callCounter} | Active connections: ${doing}`);
                     }
 
                     function testingLog(message) {
@@ -63,18 +64,22 @@
                         $logs.append(message + '</br>');
                     }
 
-                    function showAlertInfo(organization, project, repo, repoAlerts, $queryinfocontainer) {
+                    function showAlertInfo(organization, project, repo, repoAlerts, $queryinfocontainer, doing) {
                         if (repoAlerts) {
                             const $projectli = $queryinfocontainer.find(`#${project.id}`);
                             const $projectul = $projectli.find('ul');
                             //consoleLog(`Found [${JSON.stringify(repoAlerts)}] dependency alerts for repo [${repo.name}]`)
                             $projectul.append(`<li>${repo.name} (${repoAlerts.dependencyAlerts}/${repoAlerts.secretAlerts}/${repoAlerts.codeAlerts})</li>\n`);
 
-                            setAlertValues(repoAlerts, organization, project.name);
+                            setAlertValues(repoAlerts, organization, project.name, doing);
                         }
                     }
 
-                    function showRepoInfo(repos, project, organization) {
+                    function noAlerts(organization, project, repo) {
+                        console.log(`No alerts found for repo [${repo.name}]`);
+                    }
+
+                    async function showRepoInfo(repos, project, organization) {
                         //consoleLog(`Found [${repos?.length}] repos for project [${project.name}]`);
 
                         var repoCounter = $('p.repoCount');
@@ -95,12 +100,18 @@
 
                         for (let repoIndex in repos) {
                             const repo = repos[repoIndex];
+                            // only load the alerts if the repo has a size, otherwise it is still an empty repo
+                            if (repo.size > 0) {
                             // call and let the promise handle the rest
-                            getAlerts(organization, project.name, repo.id).then(
-                                repoAlerts => showAlertInfo(organization, project, repo, repoAlerts, $queryinfocontainer)
-                            );
+                            // getAlerts(organization, project.name, repo.id).then(
+                            //    repoAlerts => showAlertInfo(organization, project, repo, repoAlerts, $queryinfocontainer)
+                            // );
+
+                            // add work definition to array
+                            getAlertCalls.push({organization, project, repo});
+
                             // wait .250 seconds between calls
-                            setTimeout(() => { }, 250);
+                            // setTimeout(() => { }, 250);
                             // new Promise((resolve, reject) => {
                             //     getAlerts(organization, project.name, repo.id)
                             //         .then(repoAlerts => {
@@ -114,11 +125,10 @@
                             // }).catch(error => {
                             //     console.error(error);
                             // });
-                            // wait .2 seconds between calls
-                            //sleep(200);
+                            }
                         }
 
-                        if (repos.length > 0) {
+                        if (repoCount > 0) {
                             $queryinfocontainer.append(`</ul>\n`);
                         }
                     }
@@ -133,19 +143,54 @@
 
                         for (let index in projects) {
                             const project = projects[index];
-                            //consoleLog(`Checking project: [${JSON.stringify(project)}]`);
                             $queryinfocontainer.append(`<li id="${project.id}">${project.name}</li>\n`);
                             // load the repos for this project:
                             try {
-                                getRepos(VSS, Service, GitWebApi, project.name, false).then(
-                                    repos => showRepoInfo(repos, project, organization)
-                                );
+                                // getRepos(VSS, Service, GitWebApi, project.name, false).then(
+                                //     repos => showRepoInfo(repos, project, organization)
+                                // );
+                                const repos = await getRepos(VSS, Service, GitWebApi, project.name, false);
+                                await showRepoInfo(repos, project, organization);
                             }
                             catch (err) {
                                 consoleLog(`error loading repos for project ${project.name}` + JSON.stringify(err));
                             }
                         };
                         $queryinfocontainer.append(`</ul>`);
+
+                        // wait for all the promises to complete
+                        consoleLog(`Waiting for [${getAlertCalls.length}] calls to complete`);
+                        let position = 0;
+                        let waiting = 0;
+                        let batchSize = 200; // size of the calls to run at once
+                        let todo = getAlertCalls.length;
+                        let doing = 0;
+                        let i = 0
+                        while (i < getAlertCalls.length) {
+                            if (doing < batchSize) {
+                                let work = getAlertCalls[i];
+                                // do the work
+                                getAlerts(work.organization, work.project, work.repo).then(repoAlerts => {
+                                        doing--;
+                                        showAlertInfo(work.organization, work.project, work.repo, repoAlerts, $queryinfocontainer, doing)
+                                        //store the overall results: results.push(repoAlerts);
+                                }).
+                                catch(error => {
+                                    console.error(`Error handling get alerts for ${work.repo}: ${error}`);
+                                    doing--;
+                                })
+
+                                doing++;
+                                i++
+                            }
+                            else
+                            {
+                                // wait some time before starting the next batch
+                                await new Promise(resolve => setTimeout(resolve, 500));
+                            }
+                        }
+
+                        var somethingToBreakOn = 0;
                     }
 
                     WidgetHelpers.IncludeWidgetStyles();
