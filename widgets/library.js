@@ -69,9 +69,35 @@ function GetAlertTypeFromValue(value) {
     }
 }
 
-async function getAlerts(organization, projectName, repoId) {
-    //consoleLog('getAlerts');
+function fillSelectRepoDropdown(dropDown, repos) {
+    // add a top option to select no repo
+    dropDown.append(`<option value="">Select a repository</option>`);
+    dropDown.append(`<option value="">All repos in this project</option>`);
+    // sort the repo alphabetically
+    repos.sort((a, b) => a.name.localeCompare(b.name));
+    repos.forEach(r => {
+        $repoDropdown.append(`<option value=${r.name}>${r.name}</option>`);
+    });
+}
 
+async function getAlerts(organization, projectName, repoId) {
+    if (repoId) {
+        // run normally for a single repo
+        return await getAlertsForRepo(organization, projectName, repoId)
+    }
+    else {
+        // todo: run for ALL repositories in the current project
+        return {
+            count: -1,
+            dependencyAlerts: -1,
+            secretAlerts: -1,
+            codeAlerts: -1
+        }
+    }
+}
+
+async function getAlertsForRepo(organization, projectName, repoId) {
+    //consoleLog('getAlerts');
     let values = {
         count: 0,
         dependencyAlerts: 0,
