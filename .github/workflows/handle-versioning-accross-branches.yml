@@ -8,13 +8,21 @@ jobs:
   extension-versioning:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: git-actions/set-user@v1
 
       - name: Prevent branch warnings
         run: |
           # config git advice.detachedHead to false
           git config advice.detachedHead false
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install tfx extension
+        run: |
+          npm install -g tfx-cli
 
       - name: Get highest version number accross all branches
         id: get-version
