@@ -35,7 +35,7 @@ async function getAlerts(
     alertType: number
     )
 {
-    if (!(alertType == 1 || alertType == 2)) {
+    if (!(alertType == 1 || alertType == 3)) {
         console.log(`Error loading alerts for branch [${branchName}] with alertType [${alertType}]`)
         return null
     }
@@ -70,16 +70,10 @@ async function run() {
 
         // todo: convert to some actual value | boolean setting, for example severity score or switch between Dependency and CodeQL alerts
         const scanForDependencyAlerts : string | undefined = tl.getInput('DepedencyAlertsScan', true)
-        console.log(`scanForDependencyAlerts: ${scanForDependencyAlerts}`)
-        if (scanForDependencyAlerts !== 'true') {
-            // todo?
-        }
+        tl.debug(`scanForDependencyAlerts  setting value: ${scanForDependencyAlerts}`)
 
         const scanForCodeScanningAlerts : string | undefined = tl.getInput('CodeScanningAlerts', true)
-        console.log(`scanForCodeScanningAlerts: ${scanForCodeScanningAlerts}`)
-        if (scanForCodeScanningAlerts !== 'true') {
-            // todo?
-        }
+        tl.debug(`scanForCodeScanningAlerts setting value: ${scanForCodeScanningAlerts}`)
 
         const token = getSystemAccessToken()
         const authHandler = getHandlerFromToken(token)
@@ -144,7 +138,8 @@ async function checkAlertsForType(
     alertType: number,
     sourceBranchName: string,
     targetBranchName: string
-): Promise<{newAlertsFound: boolean, message: string}> {
+): Promise<{newAlertsFound: boolean, message: string}>
+{
     const sourceBranchResponse = await getAlerts(connection, orgSlug, project, repository, sourceBranchName, alertType)
     const targetBranchResponse = await getAlerts(connection, orgSlug, project, repository, targetBranchName, alertType)
 
@@ -152,15 +147,15 @@ async function checkAlertsForType(
     tl.debug(`target response: ${JSON.stringify(targetBranchResponse)}`)
 
     let alertTypeString = `Dependency`
-    if (alertType == 2) {
+    if (alertType == 3) {
         alertTypeString = `Code scanning`
     }
 
-    if (sourceBranchResponse.result.count == 0) {
-        console.log(`No alerts found for this branch for alert type [${alertTypeString}]`)
+    if (!sourceBranchResponse || sourceBranchResponse.result.count == 0) {
+        console.log(`No alerts found for this branch [${sourceBranchName}] for alert type [${alertTypeString}]`)
 
         //tl.setResult(tl.TaskResult.Succeeded, `Found no alerts for the source branch`)
-        return {newAlertsFound: false, message: ``}
+        return { newAlertsFound: false, message: `` }
     }
     else {
         // check by result.alertId if there is a new alert or not (so alert not in targetBranch)
@@ -184,7 +179,9 @@ async function checkAlertsForType(
                 // and show them:
                 const specificAlertMessage = `- ${alertId}: ${alertTitle}, url: ${alertUrl}`
                 console.log(specificAlertMessage)
-                message += `\\n${specificAlertMessage}` // todo: check if this new line actually works :-)
+                message += `\r\n${specificAlertMessage}` // todo: check if this new line actually works :-)
+                // tested \\n --> did not work
+                // tested \\r\\n --> did not work
             }
             return {newAlertsFound: true, message: message}
         }
