@@ -1,0 +1,10 @@
+In this branch was added:
+- start of selection option in the PR alert check task to switch between either/or 1. Dependency scanning alerts, 3. Code scanning alerts
+  - todo: check how a checkbox option here works
+  - todo: check if the reload works as well for this config screen
+- in the 1x1 widget, code was added to configure this widget for either 1 repo or ALL repos in the project
+  - test loading the config, both in the config screen and the widget itself
+  - write the loop to go over ALL repos in the org (might be already be available in another branch)
+
+
+Do check the versions of the widget before pushing!

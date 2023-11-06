@@ -54,7 +54,7 @@ jobs:
           # loop over all branches
           $highestVersion = 0
           foreach ($branch in $(git branch -r --format='%(refname:short)')) {
-            # checkout the branch
+            Write-Host "Checkout the branch [$branch]"
             git checkout $branch
 
             # get the semantic version number from the version in the dependencyReviewTask/task.json file
