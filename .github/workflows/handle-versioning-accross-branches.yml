@@ -19,7 +19,14 @@ jobs:
       - name: Get highest version number accross all branches
         id: get-version
         shell: pwsh
+        env:
+          AZURE_DEVOPS_CREATE_PAT: ${{ secrets.AZURE_DEVOPS_CREATE_PAT}}
         run: |
+          # get the last updated version for this extension from the server
+          $output = $(tfx extension show --token $env:AZURE_DEVOPS_CREATE_PAT --vsix $vsix --publisher "RobBos" --extension-id "GH…
+          $lastVersion = ($output.versions | Sort-Object -Property lastUpdated -Descending)[0]
+          Write-Host "Last version: [$($lastVersion.version)] from server"
+
           # SemVer code
           function Parse-SemVer ($version) {
           $parts = $version.Split('.')
@@ -42,20 +49,18 @@ jobs:
             # checkout the branch
             git checkout $branch
 
-            # get the semantic version number from the vss-extension-dev.json file
-            $version = Get-Content -Path "vss-extension.json" | ConvertFrom-Json | Select-Object -ExpandProperty version
+            # get the semantic version number from the version in the dependencyReviewTask/task.json file
+            $version = Get-Content -Path "dependencyReviewTask/task.json" | ConvertFrom-Json | Select-Object -ExpandProperty version
             Write-Host "Found version: [$version] in branch: [$branch]"
 
             # check if the version is semantically higher than the highest version using SemVer
-            $version = Parse-SemVer $version
-
             if ($version.Major -gt $highestVersion.Major -or
                 ($version.Major -eq $highestVersion.Major -and $version.Minor -gt $highestVersion.Minor) -or
                 ($version.Major -eq $highestVersion.Major -and $version.Minor -eq $highestVersion.Minor -and $version.Patch -gt $highestVersion.Patch))
             {
                 $highestVersion = $version
 
-                Write-Host "New highest version: [$($highestVersion.Major).$($highestVersion.Minor).$($highestVersion.Patch)]"
+                Write-Host "New highest version from PR task.json: [$($highestVersion.Major).$($highestVersion.Minor).$($highestVersion.Patch)]"
             }
           }
 
