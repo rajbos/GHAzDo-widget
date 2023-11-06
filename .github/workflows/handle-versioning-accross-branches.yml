@@ -78,5 +78,5 @@ jobs:
           Write-Host "Highest version: [$($highestVersion.Major).$($highestVersion.Minor).$($highestVersion.Patch)]"
 
           # show the highest version number in GitHub by writing to the job summary file
-          Set-Content -Path $env:GITHUB_STEP_SUMMARY -Value "Highest version of the extension: [$($lastVersion.version | ConvertFrom-Json)]"
+          Set-Content -Path $env:GITHUB_STEP_SUMMARY -Value "Highest version of the extension: [$($lastVersion.version)]"
           Set-Content -Path $env:GITHUB_STEP_SUMMARY -Value "Highest version of the PR check extension: [$($highestVersion.Major).$($highestVersion.Minor).$($highestVersion.Patch)]"
