@@ -117,7 +117,7 @@ async function getAlertsForRepo(organization, projectName, repoId) {
             // }
 
             // todo: use pagination option, now: get the first 5000 alerts
-            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/AdvancedSecurity/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&api-version=7.2-preview.1`;
+            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/alerts/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&api-version=7.2-preview.1`;
             //consoleLog(`Calling url: [${url}]`);
             const alertResult = await authenticatedGet(url);
             //authenticatedGet(url).then(alertResult => {
@@ -154,7 +154,7 @@ async function getAlertsTrendLines(organization, projectName, repoId) {
     consoleLog(`getAlertsTrend for organization [${organization}], project [${projectName}], repo [${repoId}]`);
 
     try {
-        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/AdvancedSecurity/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&api-version=7.2-preview.1`;
+        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/alerts/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&api-version=7.2-preview.1`;
         consoleLog(`Calling url: [${url}]`);
         const alertResult = await authenticatedGet(url);
         //consoleLog('alertResult: ' + JSON.stringify(alertResult));
@@ -434,7 +434,7 @@ async function getAlertSeverityCounts(organization, projectName, repoId, alertTy
     ];
     try {
         // todo: filter on alertType
-        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/AdvancedSecurity/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=7.2-preview.1`;
+        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/alerts/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=7.2-preview.1`;
         //consoleLog(`Calling url: [${url}]`);
         const alertResult = await authenticatedGet(url);
         //consoleLog('alertResult: ' + JSON.stringify(alertResult));
