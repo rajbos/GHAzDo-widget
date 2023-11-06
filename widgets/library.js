@@ -1,3 +1,7 @@
+// global variables
+const areaName = "AdvancedSecurity" // old: 'AdvancedSecurity', new: 'alerts' todo: rename to alerts when CORS issues are fixed
+const apiVersion = "7.2-preview.1"
+
 function getAuthHeader() {
     return new Promise((resolve, reject) => {
         VSS.require(["VSS/Authentication/Services"], function(
@@ -76,7 +80,7 @@ function fillSelectRepoDropdown(dropDown, repos) {
     // sort the repo alphabetically
     repos.sort((a, b) => a.name.localeCompare(b.name));
     repos.forEach(r => {
-        $repoDropdown.append(`<option value=${r.name}>${r.name}</option>`);
+        dropDown.append(`<option value=${r.name}>${r.name}</option>`);
     });
 }
 
@@ -107,7 +111,7 @@ async function getAlertsForRepo(organization, projectName, repoId) {
 
     try {
         // first check if GHAzDo is enabled or not
-        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/Management/repositories/${repoId}/enablement?api-version=7.2-preview.1`
+        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/management/repositories/${repoId}/enablement?api-version=${apiVersion}`;
         //const featuresEnabledResult = await authenticatedGet(url);
 
         //authenticatedGet(url).then(featuresEnabledResult => {
@@ -117,7 +121,8 @@ async function getAlertsForRepo(organization, projectName, repoId) {
             // }
 
             // todo: use pagination option, now: get the first 5000 alerts
-            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/alerts/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&api-version=7.2-preview.1`;
+            console.log(`Getting alerts for repo [${repoId}]`);
+            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&api-version=${apiVersion}`;
             //consoleLog(`Calling url: [${url}]`);
             const alertResult = await authenticatedGet(url);
             //authenticatedGet(url).then(alertResult => {
@@ -154,7 +159,7 @@ async function getAlertsTrendLines(organization, projectName, repoId) {
     consoleLog(`getAlertsTrend for organization [${organization}], project [${projectName}], repo [${repoId}]`);
 
     try {
-        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/alerts/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&api-version=7.2-preview.1`;
+        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&api-version=${apiVersion}`;
         consoleLog(`Calling url: [${url}]`);
         const alertResult = await authenticatedGet(url);
         //consoleLog('alertResult: ' + JSON.stringify(alertResult));
@@ -434,7 +439,7 @@ async function getAlertSeverityCounts(organization, projectName, repoId, alertTy
     ];
     try {
         // todo: filter on alertType
-        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/alerts/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=7.2-preview.1`;
+        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=${apiVersion}`;
         //consoleLog(`Calling url: [${url}]`);
         const alertResult = await authenticatedGet(url);
         //consoleLog('alertResult: ' + JSON.stringify(alertResult));

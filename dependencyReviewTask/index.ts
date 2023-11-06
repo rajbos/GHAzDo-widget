@@ -70,12 +70,14 @@ async function run() {
 
         // todo: convert to some actual value | boolean setting, for example severity score or switch between Dependency and CodeQL alerts
         const scanForDependencyAlerts : string | undefined = tl.getInput('DepedencyAlertsScan', true)
-        if (scanForDependencyAlerts !== 'enabled') {
+        console.log(`scanForDependencyAlerts: ${scanForDependencyAlerts}`)
+        if (scanForDependencyAlerts !== 'true') {
             // todo?
         }
 
         const scanForCodeScanningAlerts : string | undefined = tl.getInput('CodeScanningAlerts', true)
-        if (scanForCodeScanningAlerts !== 'enabled') {
+        console.log(`scanForCodeScanningAlerts: ${scanForCodeScanningAlerts}`)
+        if (scanForCodeScanningAlerts !== 'true') {
             // todo?
         }
 
@@ -95,7 +97,7 @@ async function run() {
         let alertType = 0
         let errorString = ""
         console.log(`Retrieving alerts with token: [${token}], organization: [${organization}], orgSlug: [${orgSlug}], project: [${project}], sourceBranchName: [${sourceBranchName}], targetBranchName: [${targetBranchName}]`)
-        if (scanForDependencyAlerts == 'enabled') {
+        if (scanForDependencyAlerts == 'true') {
             alertType = 1 // Dependency Scanning alerts
             const dependencyResult = await checkAlertsForType(connection, orgSlug, project, repository, alertType, sourceBranchName, targetBranchName)
             if (dependencyResult.newAlertsFound) {
@@ -103,7 +105,7 @@ async function run() {
             }
         }
 
-        if (scanForCodeScanningAlerts == 'enabled') {
+        if (scanForCodeScanningAlerts == 'true') {
             alertType = 3 // Code Scanning alerts
             const codeScanningResult = await checkAlertsForType(connection, orgSlug, project, repository, alertType, sourceBranchName, targetBranchName)
             if (codeScanningResult.newAlertsFound) {
@@ -111,7 +113,7 @@ async function run() {
             }
         }
 
-        if (scanForDependencyAlerts !== 'enabled' && scanForCodeScanningAlerts !== 'enabled') {
+        if (scanForDependencyAlerts !== 'true' && scanForCodeScanningAlerts !== 'true') {
             const message = `No options selected to check for either dependency scanning alerts or code scanning alerts`
             console.log(message)
             tl.setResult(tl.TaskResult.Skipped, message)

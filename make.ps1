@@ -278,14 +278,19 @@ if ("build" -eq $command) {
     Get-ChildItem -Path .\ -Filter $extensionPrefix*.vsix | Remove-Item -Force
 
     # get the last updated version for this extension from the server to make sure we are rolling forward
-    $output = $(tfx extension show --token $env:AZURE_DEVOPS_PAT --vsix $vsix --publisher "RobBos" --extension-id "GHAzDoWidget-DEV" --output json | ConvertFrom-Json)
-    $lastVersion = ($output.versions | Sort-Object -Property lastUpdated -Descending)[0]
-    Write-Host "Last version: [$($lastVersion.version)] from server"
-    # overwrite the version in the json file
-    $json = Get-Content .\vss-extension-dev.json | ConvertFrom-Json
-    $json.version = $lastVersion
-    # write the json file back
-    $json | ConvertTo-Json | Set-Content .\vss-extension-dev.json
+    try {
+        $output = $(tfx extension show --token $env:AZURE_DEVOPS_PAT --vsix $vsix --publisher "RobBos" --extension-id "GHAzDoWidget-DEV" --output json | ConvertFrom-Json)
+        $lastVersion = ($output.versions | Sort-Object -Property lastUpdated -Descending)[0]
+        Write-Host "Last version: [$($lastVersion.version)] from server"
+        # overwrite the version in the json file
+        $json = Get-Content .\vss-extension-dev.json | ConvertFrom-Json -Depth 10
+        $json.version = $lastVersion.version
+        # write the json file back
+        $json | ConvertTo-Json -Depth 10 | Set-Content .\vss-extension-dev.json
+    }
+    catch {
+        Write-Host "Error loading the version from Azure DevOps Marketplace"
+    }
 
     # build the task
     # todo: up the version number
