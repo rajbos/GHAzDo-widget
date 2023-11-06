@@ -23,7 +23,7 @@ jobs:
           AZURE_DEVOPS_CREATE_PAT: ${{ secrets.AZURE_DEVOPS_CREATE_PAT}}
         run: |
           # get the last updated version for this extension from the server
-          $output = $(tfx extension show --token $env:AZURE_DEVOPS_CREATE_PAT --vsix $vsix --publisher "RobBos" --extension-id "GH…
+          $output = $(tfx extension show --token $env:AZURE_DEVOPS_CREATE_PAT --vsix $vsix --publisher "RobBos" --extension-id "GHAzDoWidget-DEV" --output json | ConvertFrom-Json)
           $lastVersion = ($output.versions | Sort-Object -Property lastUpdated -Descending)[0]
           Write-Host "Last version: [$($lastVersion.version)] from server"
 
