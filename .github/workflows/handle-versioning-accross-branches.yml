@@ -1,0 +1,57 @@
+name: Handle versioning accros branches
+
+on:
+  push:
+    # todo: add file paths of the files with version numbers
+
+jobs:
+  extension-versioning:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: git-actions/set-user@v1
+
+      - name: Get highest version number accross all branches
+        id: get-version
+        shell: pwsh
+        run: |
+          # SemVer code
+          function Parse-SemVer ($version) {
+          $parts = $version.Split('.')
+          return @{
+              Major = [int]$parts[0]
+              Minor = [int]$parts[1]
+              Patch = [int]$parts[2]
+              }
+          }
+
+          $highestVersion = @{
+              Major = 0
+              Minor = 0
+              Patch = 0
+          }
+
+          # loop over all branches
+          $highestVersion = 0
+          foreach ($branch in $(git branch -r --format='%(refname:short)')) {
+            # checkout the branch
+            git checkout $branch
+
+            # get the semantic version number from the vss-extension-dev.json file
+            $version = Get-Content -Path "src/$branch/vss-extension.json" | ConvertFrom-Json | Select-Object -ExpandProperty version
+            Write-Host "Found version: [$version] in branch: [$branch]"
+
+            # check if the version is semantically higher than the highest version using SemVer
+            $version = Parse-SemVer $version
+
+            if ($version.Major -gt $highestVersion.Major -or
+                ($version.Major -eq $highestVersion.Major -and $version.Minor -gt $highestVersion.Minor) -or
+                ($version.Major -eq $highestVersion.Major -and $version.Minor -eq $highestVersion.Minor -and $version.Patch -gt $highestVersion.Patch))
+            {
+                $highestVersion = $version
+
+                Write-Host "New highest version: [$($highestVersion.Major).$($highestVersion.Minor).$($highestVersion.Patch)]"
+            }
+          }
+
+          Write-Host "Highest version: [$($highestVersion.Major).$($highestVersion.Minor).$($highestVersion.Patch)]"
