@@ -8,8 +8,13 @@ jobs:
   extension-versioning:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: git-actions/set-user@v1
+
+      - name: Prevent branch warnings
+        run: |
+          # config git advice.detachedHead to false
+          git config advice.detachedHead false
 
       - name: Get highest version number accross all branches
         id: get-version
@@ -38,7 +43,7 @@ jobs:
             git checkout $branch
 
             # get the semantic version number from the vss-extension-dev.json file
-            $version = Get-Content -Path "src/$branch/vss-extension.json" | ConvertFrom-Json | Select-Object -ExpandProperty version
+            $version = Get-Content -Path "vss-extension.json" | ConvertFrom-Json | Select-Object -ExpandProperty version
             Write-Host "Found version: [$version] in branch: [$branch]"
 
             # check if the version is semantically higher than the highest version using SemVer
