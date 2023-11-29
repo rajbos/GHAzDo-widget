@@ -36,11 +36,13 @@ async function getAlerts(
     )
 {
     if (!(alertType == 1 || alertType == 3)) {
-        console.log(`Error loading alerts for branch [${branchName}] with alertType [${alertType}]`)
+        console.log(`Error loading alerts for branch [${branchName}] with unknown alertType [${alertType}]`)
         return null
     }
 
-    const branchUrl = `https://advsec.dev.azure.com/${orgSlug}/${project}/_apis/AdvancedSecurity/repositories/${repository}/alerts?criteria.alertType=${alertType}&criteria.ref=${branchName}&criteria.onlyDefaultBranchAlerts=true&useDatabaseProvider=true`
+    const branchUrl = `https://advsec.dev.azure.com/${orgSlug}/${project.replace(" ", "%20")}/_apis/alert/repositories/${repository}/alerts?criteria.alertType=${alertType}&criteria.ref=${branchName}&criteria.onlyDefaultBranchAlerts=true&useDatabaseProvider=true`
+    tl.debug(`Calling api with url: [${branchUrl}]`)
+
     let branchResponse: IResponse
 
     try {
@@ -143,6 +145,7 @@ async function checkAlertsForType(
     const sourceBranchResponse = await getAlerts(connection, orgSlug, project, repository, sourceBranchName, alertType)
     const targetBranchResponse = await getAlerts(connection, orgSlug, project, repository, targetBranchName, alertType)
 
+    // todo: check if response.statuscode === 404 and skip the rest, do report a warning
     tl.debug(`source response: ${JSON.stringify(sourceBranchResponse)}`)
     tl.debug(`target response: ${JSON.stringify(targetBranchResponse)}`)
 
@@ -151,7 +154,7 @@ async function checkAlertsForType(
         alertTypeString = `Code scanning`
     }
 
-    if (!sourceBranchResponse || sourceBranchResponse.result.count == 0) {
+    if (!sourceBranchResponse || sourceBranchResponse?.result?.count == 0) {
         console.log(`No alerts found for this branch [${sourceBranchName}] for alert type [${alertTypeString}]`)
 
         //tl.setResult(tl.TaskResult.Succeeded, `Found no alerts for the source branch`)
@@ -170,11 +173,11 @@ async function checkAlertsForType(
         });
 
         if (newAlertIds.length > 0) {
-            let message =`Found [${sourceBranchResponse.result.count}] alerts for the source branch [${sourceBranchName}] of which [${newAlertIds.length}] are new:`
+            let message =`Found [${sourceBranchResponse.result.count}] alerts for the source branch [${sourceBranchName}] for alert type [${alertTypeString}] of which [${newAlertIds.length}] are new:`
             console.log(message)
             for (const alertId of newAlertIds) {
                 // get the alert details:
-                const alertUrl = `https://dev.azure.com/${orgSlug}/${project}/_git/${repository}/alerts/${alertId}?branch=refs/heads/${sourceBranchName}`
+                const alertUrl = `https://dev.azure.com/${orgSlug}/${project.replace(" ", "%20")}/_git/${repository}/alerts/${alertId}?branch=refs/heads/${sourceBranchName}`
                 const alertTitle = sourceBranchResponse.result.value.find((alert) => {return alert.alertId == alertId;})?.title
                 // and show them:
                 const specificAlertMessage = `- ${alertId}: ${alertTitle}, url: ${alertUrl}`
@@ -186,7 +189,7 @@ async function checkAlertsForType(
             return {newAlertsFound: true, message: message}
         }
         else {
-            const message = `Found no new alerts for the source branch [${sourceBranchName}]`
+            const message = `Found no new alerts for the source branch [${sourceBranchName}] for alert type [${alertTypeString}]`
             console.log(message)
             return {newAlertsFound: false, message: message}
         }

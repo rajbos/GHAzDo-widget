@@ -30,11 +30,11 @@
                         consoleLog('organization name: ' + organization);
 
                         // log if vss, service, gitwebapi have a value or not
-                        consoleLog(`vss: [${VSS}], GitWebApi: [${JSON.stringify(GitWebApi)}]`)
-                        consoleLog(`GitWebApi.GitHttpClient: [${GitWebApi.GitHttpClient}]`);
+                        // consoleLog(`vss: [${VSS}], GitWebApi: [${JSON.stringify(GitWebApi)}]`)
+                        // consoleLog(`GitWebApi.GitHttpClient: [${GitWebApi.GitHttpClient}]`);
 
-                        const repos = await getRepos(VSS, Service, GitWebApi, projectName, useCache = false);
-                        consoleLog(`Found repos:[${repos.length}]`);
+                        // const repos = await getRepos(VSS, Service, GitWebApi, projectName, useCache = false);
+                        // consoleLog(`Found repos:[${repos.length}]`);
 
                         return {
                             load: async function (widgetSettings) {

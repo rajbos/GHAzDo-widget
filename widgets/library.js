@@ -1,5 +1,5 @@
 // global variables
-const areaName = "AdvancedSecurity" // old: 'AdvancedSecurity', new: 'alerts' todo: rename to alerts when CORS issues are fixed
+const areaName = "alert" // old: 'AdvancedSecurity', new: 'alert' todo: rename to alerts when CORS issues are fixed
 const apiVersion = "7.2-preview.1"
 
 function getAuthHeader() {

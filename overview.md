@@ -1,4 +1,4 @@
-Extension for Azure DevOps that shows the number of open security alerts for the configured repository. Please install it and let me know what you think! Create an issue for feedback or feature requests.
+Extension for Azure DevOps that shows the number of open security alerts from GitHub Advanced Security for Azure DevOps, for the configured repository. Please install it and let me know what you think! Create an issue for feedback or feature requests.
 
 Install from the marketplace: https://marketplace.visualstudio.com/items?itemName=RobBos.GHAzDoWidget
 
@@ -6,8 +6,11 @@ Install from the marketplace: https://marketplace.visualstudio.com/items?itemNam
 * Show all three alert counts in one widget in 2 by 1 layout
 * Split it into three separate widgets with just the single value you scan for (1x1 or 2x1)
 * Show a trend line of all alerts in the last 3 weeks (2x2,3x2,4x2)
+* Show a pie chart with the distribution of alerts based on the severity level (2x2,3x2,4x2)
 
-![Screenshot of the all the widgets with alert count for dependencies, secrets, and code scanning](/img/overview_600.png)
+![Screenshot of the all the widgets with alert count for dependencies, secrets, and code scanning](/img/overview_600.png)  
+
+> Note: only project level dashboards are supported at the moment.
 
 ## Pipeline tasks
 * Advanced-Security-Review: lets you check the pull request for newly introduced alerts from Dependency Scanning or Code Scanning (configurable). If new alerts are introduced, the task will fail. 
@@ -17,9 +20,7 @@ Install from the marketplace: https://marketplace.visualstudio.com/items?itemNam
 
 ### Advanced Security Review Output
 If new alerts are found in the source branch (compared to the target branch), the task will fail:
-![Screenshot of the failure message of the review task](/img/dependencyReviewTask.png)
+![Screenshot of the failure message of the review task](/img/dependencyReviewTask.png)  
 
 ## GitHub repo
 Please report issues, feature request, and feedback here: https://github.com/rajbos/GHAzDo-widget.
-
-> Note: only project level dashboards are supported at the moment.
