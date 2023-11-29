@@ -1,6 +1,6 @@
 # load the given arguments
 param(
-    [ValidateSet("provision", "build", "")]
+    [ValidateSet("provision", "build", "publish", "")]
     [string]$command = "provision",
     [int] $provisionCount = 100
 )
@@ -263,8 +263,12 @@ function New-VSTSAuthenticationToken {
     return $accesstoken;
 }
 
-if ("build" -eq $command) {
-    Write-Host "Building the dev version"
+function Build {
+    param (
+        [ValidateSet("dev", "prod")]
+        [string] $buildtype
+    )
+    Write-Host "Building the [$buildtype] version"
 
     # check if $env:AZURE_DEVOPS_PAT has a value
     if ($null -eq $env:AZURE_DEVOPS_PAT) {
@@ -272,10 +276,35 @@ if ("build" -eq $command) {
         exit
     }
 
-    # run the default: build the dev version
+    # default values for dev
+    $vsix = "vss-extension-dev.json"
     $extensionPrefix="RobBos.GHAzDoWidget-DEV-"
-    # delete all files with the name RobBos.GHAzDoWidget-DEV*.vsix
+    $extensionId = "GHAzDoWidget-DEV"
+
+    if ($buildtype -eq "prod") {
+        # values for prod
+        $vsix = "vss-extension.json"
+        $extensionPrefix="RobBos.GHAzDoWidget-"
+        $extensionId = "GHAzDoWidget"
+    }
+
+    # delete all files with the name prefix*.vsix
     Get-ChildItem -Path .\ -Filter $extensionPrefix*.vsix | Remove-Item -Force
+
+    # get the last updated version for this extension from the server to make sure we are rolling forward
+    try {
+        $output = $(tfx extension show --token $env:AZURE_DEVOPS_PAT --vsix $vsix --publisher "RobBos" --extension-id $extensionId --output json | ConvertFrom-Json)
+        $lastVersion = ($output.versions | Sort-Object -Property lastUpdated -Descending)[0]
+        Write-Host "Last version: [$($lastVersion.version)] from server"
+        # overwrite the version in the json file
+        $json = Get-Content .\$vsix | ConvertFrom-Json -Depth 10
+        $json.version = $lastVersion.version
+        # write the json file back
+        $json | ConvertTo-Json -Depth 10 | Set-Content .\$vsix
+    }
+    catch {
+        Write-Host "Error loading the version from Azure DevOps Marketplace"
+    }
 
     # build the task
     # todo: up the version number
@@ -286,15 +315,23 @@ if ("build" -eq $command) {
     Set-Location ..
 
     # package the whole extension
-    tfx extension create --manifest-globs vss-extension-dev.json --rev-version
+    tfx extension create --manifest-globs $vsix --rev-version
 
     # get the new version number from the json file
-    $json = Get-Content .\vss-extension-dev.json | ConvertFrom-Json
+    $json = Get-Content .\$vsix | ConvertFrom-Json
     $visx = "$extensionPrefix$($json.version).vsix"
 
     Write-Host "Publishing [$visx]"
-    tfx extension publish --vsix $visx  --service-url https://marketplace.visualstudio.com --token "$($env:AZURE_DEVOPS_PAT)"
+    tfx extension publish --vsix $visx --service-url https://marketplace.visualstudio.com --token "$($env:AZURE_DEVOPS_PAT)"
+}
 
+if ("build" -eq $command) {
+    Build -buildtype "dev"
+    exit
+}
+
+if ("publish" -eq $command) {
+    Build -buildtype "prod"
     exit
 }
 

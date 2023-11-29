@@ -31,7 +31,7 @@
                             var customSettings = {
                                 data: JSON.stringify({
                                         repo: $repoDropdown.val(),
-                                        repoId: repo.id,
+                                        repoId: repo?.id,
                                         repoAlertType: $repoAlertType.val()
                                     })
                             };
@@ -46,13 +46,8 @@
 
                                 // add all repos as selection options to the dropdown
                                 if (repos) {
-                                    // add a top option to select no repo
-                                    $repoDropdown.append(`<option value="">Select a repository</option>`);
-                                    // sort the repo alphabetically
-                                    repos.sort((a, b) => a.name.localeCompare(b.name));
-                                    repos.forEach(r => {
-                                        $repoDropdown.append(`<option value=${r.name}>${r.name}</option>`);
-                                    });
+                                    // todo: use in all other widget locations as well
+                                    fillSelectRepoDropdown($repoDropdown, repos)
                                 }
 
                                 if (settings && settings.repo) {
@@ -85,7 +80,7 @@
                                 var customSettings = {
                                     data: JSON.stringify({
                                             repo: $repoDropdown.val(),
-                                            repoId: repo.id,
+                                            repoId: repo?.id,
                                             repoAlertType: $repoAlertType.val()
                                         })
                                 };

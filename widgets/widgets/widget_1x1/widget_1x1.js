@@ -1,9 +1,10 @@
-async function loadWidget(widgetSettings, organization, projectName) {
+async function loadWidget(widgetSettings, organization, projectName, VSS, Service, GitWebApi) {
     consoleLog(`WidgetSettings inside loadWidget_1x1: ${JSON.stringify(widgetSettings)}`);
     consoleLog(`Running for organization [${organization}], projectName [${projectName}]`);
 
     // data contains a stringified json object, so we need to make a json object from it
     const data = JSON.parse(widgetSettings.customSettings.data);
+    consoleLog(`data from the widgetSettings: ${JSON.stringify(data)}`);
 
     // init with default values
     let alerts = {
@@ -13,19 +14,43 @@ async function loadWidget(widgetSettings, organization, projectName) {
     };
     let linkBase = 'https://dev.azure.com';
 
-    if (data && data.repo) {
-        const repoName = data.repo;
+    if (data) {
         const repoId = data.repoId;
-        consoleLog(`loaded repoName from widgetSettings_1x1: [${repoName}] and id [${repoId}]`);
+        let repoName = "";
+        if (data.repo) {
+            repoName = data.repo
+            consoleLog(`loaded repoName from widgetSettings_1x1: [${repoName}] and id [${repoId}]`);
 
-        // set the tile
+            alerts = await getAlerts(organization, projectName, repoId);
+        }
+        else {
+            // load alerts for ALL repos in the project
+            repoName = `${projectName}`;
+            // todo: load all
+            consoleLog(`loading alerts for all repos in the project [${repoName}]`);
+
+            const repos = await getRepos(VSS, Service, GitWebApi, projectName, useCache = true)
+            for (let repoIndex in repos) {
+                const repo = repos[repoIndex];
+                consoleLog(`loading alerts for repo [${repo.name}] with id [${repo.id}]`);
+                // call and let the promise handle the rest
+                const repoAlerts = await getAlerts(organization, projectName, repo.id)
+
+                alerts.codeAlerts += repoAlerts.codeAlerts;
+                alerts.dependencyAlerts += repoAlerts.dependencyAlerts;
+                alerts.secretAlerts += repoAlerts.secretAlerts;
+            }
+        }
+        consoleLog('alerts: ' +  JSON.stringify(alerts));
+
+        // remove %20 from the name so that it displays correctly
+        repoName = repoName.replace(/%20/g, ' '); //todo: support more of these weird characters
+
+        // set the title
         var title = $('h2.ghazdo-title');
         title.text(`${repoName}`);
         title.attr('title', repoName);
-
         consoleLog(`title set to [${repoName}]`);
-        alerts = await getAlerts(organization, projectName, repoId);
-        consoleLog('alerts: ' +  JSON.stringify(alerts));
 
         // GHAS is only available on the SaaS version, so we can hardcode the domain
         linkBase = `https://dev.azure.com/${organization}/${projectName}/_git/${repoName}/alerts`;
@@ -39,7 +64,11 @@ async function loadWidget(widgetSettings, organization, projectName) {
 
     let alertTypeToShow = 1
     if (data && data.repoAlertType) {
+        consoleLog(`loaded repoAlertType from widgetSettings_1x1: [${data.repoAlertType}]`);
         alertTypeToShow = data.repoAlertType;
+    }
+    else {
+        consoleLog(`repoAlertType not found in widgetSettings_1x1, defaulting to [${alertTypeToShow}]`);
     }
 
     // set the alert count

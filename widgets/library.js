@@ -1,3 +1,7 @@
+// global variables
+const areaName = "alert" // old: 'AdvancedSecurity', new: 'alert' todo: rename to alerts when CORS issues are fixed
+const apiVersion = "7.2-preview.1"
+
 function getAuthHeader() {
     return new Promise((resolve, reject) => {
         VSS.require(["VSS/Authentication/Services"], function(
@@ -69,9 +73,36 @@ function GetAlertTypeFromValue(value) {
     }
 }
 
-async function getAlerts(organization, projectName, repoId) {
-    //consoleLog('getAlerts');
+function fillSelectRepoDropdown(dropDown, repos) {
+    // add a top option to select no repo
+    dropDown.append(`<option value="">Select a repository</option>`);
+    dropDown.append(`<option value="">All repos in this project</option>`);
+    // sort the repo alphabetically
+    repos.sort((a, b) => a.name.localeCompare(b.name));
+    repos.forEach(r => {
+        dropDown.append(`<option value=${r.name}>${r.name}</option>`);
+    });
+}
 
+async function getAlerts(organization, projectName, repoId, repos) {
+    if (repoId) {
+        // run normally for a single repo
+        return await getAlertsForRepo(organization, projectName, repoId)
+    }
+    else {
+        // todo: run for ALL repositories in the current project
+        // load all repos in the project
+        return {
+            count: -1,
+            dependencyAlerts: -1,
+            secretAlerts: -1,
+            codeAlerts: -1
+        }
+    }
+}
+
+async function getAlertsForRepo(organization, projectName, repoId) {
+    //consoleLog('getAlerts');
     let values = {
         count: 0,
         dependencyAlerts: 0,
@@ -81,7 +112,7 @@ async function getAlerts(organization, projectName, repoId) {
 
     try {
         // first check if GHAzDo is enabled or not
-        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/Management/repositories/${repoId}/enablement?api-version=7.2-preview.1`
+        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/management/repositories/${repoId}/enablement?api-version=${apiVersion}`;
         //const featuresEnabledResult = await authenticatedGet(url);
 
         //authenticatedGet(url).then(featuresEnabledResult => {
@@ -91,7 +122,8 @@ async function getAlerts(organization, projectName, repoId) {
             // }
 
             // todo: use pagination option, now: get the first 5000 alerts
-            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/AdvancedSecurity/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&api-version=7.2-preview.1`;
+            console.log(`Getting alerts for repo [${repoId}]`);
+            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&api-version=${apiVersion}`;
             //consoleLog(`Calling url: [${url}]`);
             const alertResult = await authenticatedGet(url);
             //authenticatedGet(url).then(alertResult => {
@@ -128,7 +160,7 @@ async function getAlertsTrendLines(organization, projectName, repoId) {
     consoleLog(`getAlertsTrend for organization [${organization}], project [${projectName}], repo [${repoId}]`);
 
     try {
-        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/AdvancedSecurity/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&api-version=7.2-preview.1`;
+        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&api-version=${apiVersion}`;
         consoleLog(`Calling url: [${url}]`);
         const alertResult = await authenticatedGet(url);
         //consoleLog('alertResult: ' + JSON.stringify(alertResult));
@@ -330,6 +362,7 @@ async function getProjects(VSS, Service, CoreRestClient) {
 
 async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
 
+    consoleLog(`inside getRepos`);
     const webContext = VSS.getWebContext();
     const project = webContext.project;
     let projectNameForSearch = projectName ? projectName : project.name;
@@ -345,7 +378,7 @@ async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
         try {
             const document = await getSavedDocument(VSS, documentCollection, documentId);
             consoleLog(`document inside getRepos: ${JSON.stringify(document)}`);
-            if (document || document.data.length > 0) {
+            if (document || document?.data?.length > 0) {
                 consoleLog(`Loaded repos from document store. Last updated [${document.lastUpdated}]`);
                 // get the data type of lastUpdated
                 consoleLog(`typeof document.lastUpdated: ${typeof document.lastUpdated}`)
@@ -367,7 +400,7 @@ async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
         }
     }
 
-    consoleLog(`Loading repositories from the API`);
+    consoleLog(`Loading repositories from the API for project [${projectNameForSearch}]`);
     try {
         const gitClient = Service.getClient(GitWebApi.GitHttpClient);
         let repos = await gitClient.getRepositories(projectNameForSearch);
@@ -408,7 +441,7 @@ async function getAlertSeverityCounts(organization, projectName, repoId, alertTy
     ];
     try {
         // todo: filter on alertType
-        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/AdvancedSecurity/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=7.2-preview.1`;
+        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=${apiVersion}`;
         //consoleLog(`Calling url: [${url}]`);
         const alertResult = await authenticatedGet(url);
         //consoleLog('alertResult: ' + JSON.stringify(alertResult));
