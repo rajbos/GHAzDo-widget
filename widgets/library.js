@@ -84,13 +84,14 @@ function fillSelectRepoDropdown(dropDown, repos) {
     });
 }
 
-async function getAlerts(organization, projectName, repoId) {
+async function getAlerts(organization, projectName, repoId, repos) {
     if (repoId) {
         // run normally for a single repo
         return await getAlertsForRepo(organization, projectName, repoId)
     }
     else {
         // todo: run for ALL repositories in the current project
+        // load all repos in the project
         return {
             count: -1,
             dependencyAlerts: -1,
@@ -361,6 +362,7 @@ async function getProjects(VSS, Service, CoreRestClient) {
 
 async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
 
+    consoleLog(`inside getRepos`);
     const webContext = VSS.getWebContext();
     const project = webContext.project;
     let projectNameForSearch = projectName ? projectName : project.name;
@@ -376,7 +378,7 @@ async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
         try {
             const document = await getSavedDocument(VSS, documentCollection, documentId);
             consoleLog(`document inside getRepos: ${JSON.stringify(document)}`);
-            if (document || document.data.length > 0) {
+            if (document || document?.data?.length > 0) {
                 consoleLog(`Loaded repos from document store. Last updated [${document.lastUpdated}]`);
                 // get the data type of lastUpdated
                 consoleLog(`typeof document.lastUpdated: ${typeof document.lastUpdated}`)
@@ -398,7 +400,7 @@ async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
         }
     }
 
-    consoleLog(`Loading repositories from the API`);
+    consoleLog(`Loading repositories from the API for project [${projectNameForSearch}]`);
     try {
         const gitClient = Service.getClient(GitWebApi.GitHttpClient);
         let repos = await gitClient.getRepositories(projectNameForSearch);
