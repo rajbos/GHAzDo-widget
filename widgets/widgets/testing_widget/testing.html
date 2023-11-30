@@ -69,7 +69,7 @@
                             const $projectli = $queryinfocontainer.find(`#${project.id}`);
                             const $projectul = $projectli.find('ul');
                             //consoleLog(`Found [${JSON.stringify(repoAlerts)}] dependency alerts for repo [${repo.name}]`)
-                            $projectul.append(`<li>${repo.name} (${repoAlerts.dependencyAlerts}/${repoAlerts.secretAlerts}/${repoAlerts.codeAlerts})</li>\n`);
+                            $projectul.append(`<li>${repo.name} (${repoAlerts.values.dependencyAlerts}/${repoAlerts.values.secretAlerts}/${repoAlerts.values.codeAlerts})</li>\n`);
 
                             setAlertValues(repoAlerts, organization, project.name, doing);
                         }
@@ -80,7 +80,7 @@
                     }
 
                     async function showRepoInfo(repos, project, organization) {
-                        //consoleLog(`Found [${repos?.length}] repos for project [${project.name}]`);
+                        //consoleLog(`Found [${repos?.length}] repos for project [${project.name}] to load alerts for`);
 
                         var repoCounter = $('p.repoCount');
                         var currentValue = parseInt(repoCounter.text());
@@ -150,6 +150,7 @@
                                 //     repos => showRepoInfo(repos, project, organization)
                                 // );
                                 const repos = await getRepos(VSS, Service, GitWebApi, project.name, false);
+                                //console.log(`Found [${repos?.length}] repos for project [${project.name}]`);
                                 await showRepoInfo(repos, project, organization);
                             }
                             catch (err) {
@@ -159,24 +160,25 @@
                         $queryinfocontainer.append(`</ul>`);
 
                         // wait for all the promises to complete
-                        consoleLog(`Waiting for [${getAlertCalls.length}] calls to complete`);
+                        console.log(`Waiting for [${getAlertCalls.length}] calls to complete`);
                         let position = 0;
                         let waiting = 0;
                         let batchSize = 200; // size of the calls to run at once
                         let todo = getAlertCalls.length;
                         let doing = 0;
                         let i = 0
+                        const repos = null // required param, but not used
                         while (i < getAlertCalls.length) {
                             if (doing < batchSize) {
                                 let work = getAlertCalls[i];
                                 // do the work
-                                getAlerts(work.organization, work.project, work.repo).then(repoAlerts => {
+                                getAlerts(work.organization, work.project.name, work.repo.id, repos, work.project, work.repo).then(repoAlerts => {
                                         doing--;
                                         showAlertInfo(work.organization, work.project, work.repo, repoAlerts, $queryinfocontainer, doing)
                                         //store the overall results: results.push(repoAlerts);
                                 }).
                                 catch(error => {
-                                    console.error(`Error handling get alerts for ${work.repo}: ${error}`);
+                                    console.error(`Error handling get alerts for ${work.repo.name}: ${error}`);
                                     doing--;
                                 })
 

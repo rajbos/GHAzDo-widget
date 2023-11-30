@@ -85,24 +85,27 @@ function fillSelectRepoDropdown(dropDown, repos) {
     });
 }
 
-async function getAlerts(organization, projectName, repoId, repos) {
+async function getAlerts(organization, projectName, repoId, repos, project, repo) {
     if (repoId) {
         // run normally for a single repo
-        return await getAlertsForRepo(organization, projectName, repoId)
+        return await getAlertsForRepo(organization, projectName, repoId, project, repo)
     }
     else {
         // todo: run for ALL repositories in the current project
         // load all repos in the project
         return {
-            count: -1,
-            dependencyAlerts: -1,
-            secretAlerts: -1,
-            codeAlerts: -1
+            organization, project, repo,
+            values: {
+                count: -1,
+                dependencyAlerts: -1,
+                secretAlerts: -1,
+                codeAlerts: -1
+            }
         }
     }
 }
 
-async function getAlertsForRepo(organization, projectName, repoId) {
+async function getAlertsForRepo(organization, projectName, repoId, project, repo) {
     //consoleLog('getAlerts');
     let values = {
         count: 0,
@@ -114,7 +117,7 @@ async function getAlertsForRepo(organization, projectName, repoId) {
     try {
         // first check if GHAzDo is enabled or not
         url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/management/repositories/${repoId}/enablement?api-version=${apiVersion}`;
-        //const featuresEnabledResult = await authenticatedGet(url);
+        const featuresEnabledResult = await authenticatedGet(url);
 
         //authenticatedGet(url).then(featuresEnabledResult => {
             if (!featuresEnabledResult || !featuresEnabledResult.advSecEnabled) {
@@ -130,7 +133,7 @@ async function getAlertsForRepo(organization, projectName, repoId) {
             //authenticatedGet(url).then(alertResult => {
                 if (!alertResult || !alertResult.count) {
                     //consoleLog('alertResult is null');
-                    return (organization, project, repo, values);
+                    return (organization, project, repo, values = {count: 0, dependencyAlerts: 0, secretAlerts: 0, codeAlerts: 0});
                 }
                 else {
                     //consoleLog('alertResult count: ' + alertResult.count);
@@ -153,8 +156,7 @@ async function getAlertsForRepo(organization, projectName, repoId) {
     catch (err) {
         consoleLog('error in calling the advec api: ' + err);
     }
-
-    //return values;
+    return (organization, project, repo, values);
 }
 
 async function getAlertsTrendLines(organization, projectName, repoId) {
@@ -363,11 +365,11 @@ async function getProjects(VSS, Service, CoreRestClient) {
 
 async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
 
-    consoleLog(`inside getRepos`);
+    //consoleLog(`inside getRepos`);
     const webContext = VSS.getWebContext();
     const project = webContext.project;
     let projectNameForSearch = projectName ? projectName : project.name;
-    consoleLog($`Searching for repos in project with name [${projectNameForSearch}]`);
+    //consoleLog($`Searching for repos in project with name [${projectNameForSearch}]`);
 
     const documentCollection = `repos`;
     const documentId = `repositoryList-${projectNameForSearch}`;
@@ -401,7 +403,7 @@ async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
         }
     }
 
-    consoleLog(`Loading repositories from the API for project [${projectNameForSearch}]`);
+    //consoleLog(`Loading repositories from the API for project [${projectNameForSearch}]`);
     try {
         const gitClient = Service.getClient(GitWebApi.GitHttpClient);
         let repos = await gitClient.getRepositories(projectNameForSearch);
@@ -416,8 +418,7 @@ async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
                 size: repo.size,
             }
         });
-        //consoleLog(`Converted repos to: ${JSON.stringify(repos)}`);
-
+        //consoleLog(`Found [${repos.length}] repos`);
 
         if (useCache) {
             // save the repos to the document store for next time
