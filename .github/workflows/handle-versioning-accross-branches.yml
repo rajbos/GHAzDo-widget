@@ -31,10 +31,14 @@ jobs:
         id: get-version
         shell: pwsh
         env:
-          AZURE_DEVOPS_CREATE_PAT: ${{ secrets.AZURE_DEVOPS_CREATE_PAT}}
+          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT}}
         run: |
           # get the last updated version for this extension from the server
-          $output = $(tfx extension show --token $env:AZURE_DEVOPS_CREATE_PAT --vsix $vsix --publisher "RobBos" --extension-id "GHAzDoWidget-DEV" --output json | ConvertFrom-Json)
+          $output = $(tfx extension show --token $env:AZURE_DEVOPS_PAT --vsix $vsix --publisher "RobBos" --extension-id "GHAzDoWidget-DEV" --output json | ConvertFrom-Json)
+          if ($null -eq $output) {
+            Write-Host "No versions found on the server"
+            exit 1
+          }
           $lastVersion = ($output.versions | Sort-Object -Property lastUpdated -Descending)[0]
           Write-Host "Last version: [$($lastVersion.version)] from server"
 

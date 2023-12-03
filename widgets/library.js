@@ -19,6 +19,9 @@ function getAuthHeader() {
 }
 
 var callCounter = 0;
+var getProjectCalls = [];
+var getAlertCalls = [];
+var activeCalls = 0;
 function authenticatedGet(url) {
     return getAuthHeader()
         .then(authHeader =>
@@ -30,13 +33,26 @@ function authenticatedGet(url) {
         })
         )
         .then(response => {
+            callCounter++;
+
+            // Handle 404 error
+            if (response.status === 404) {
+                console.error(`Resource not found on url [${url}]`);
+            }
+
             // only show the response headers on httpOk
             if (response.status == !200 && response.status == !400 && response.status == !403) {
                 console.log(`Headers for [${url}] with status [${response.status}]:`)
-                response.headers.forEach((value, name) => console.log(`${name}: ${value}`));
+                response.headers.forEach((value, name) => console.log(`${name}: ${value}`))
             }
-            callCounter++;
-            return response.json()
+
+            if (response.status === 200) {
+                return response.json()
+            }
+            else {
+                // return null so the caller can handle the result themselves
+                return null
+            }
         });
 }
 class AlertType {
@@ -84,24 +100,27 @@ function fillSelectRepoDropdown(dropDown, repos) {
     });
 }
 
-async function getAlerts(organization, projectName, repoId, repos) {
+async function getAlerts(organization, projectName, repoId, repos, project, repo) {
     if (repoId) {
         // run normally for a single repo
-        return await getAlertsForRepo(organization, projectName, repoId)
+        return await getAlertsForRepo(organization, projectName, repoId, project, repo)
     }
     else {
         // todo: run for ALL repositories in the current project
         // load all repos in the project
         return {
-            count: -1,
-            dependencyAlerts: -1,
-            secretAlerts: -1,
-            codeAlerts: -1
+            organization, project, repo,
+            values: {
+                count: -1,
+                dependencyAlerts: -1,
+                secretAlerts: -1,
+                codeAlerts: -1
+            }
         }
     }
 }
 
-async function getAlertsForRepo(organization, projectName, repoId) {
+async function getAlertsForRepo(organization, projectName, repoId, project, repo) {
     //consoleLog('getAlerts');
     let values = {
         count: 0,
@@ -113,13 +132,13 @@ async function getAlertsForRepo(organization, projectName, repoId) {
     try {
         // first check if GHAzDo is enabled or not
         url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/management/repositories/${repoId}/enablement?api-version=${apiVersion}`;
-        //const featuresEnabledResult = await authenticatedGet(url);
+        const featuresEnabledResult = await authenticatedGet(url);
 
         //authenticatedGet(url).then(featuresEnabledResult => {
-            // if (!featuresEnabledResult || !featuresEnabledResult.advSecEnabled) {
-            //     consoleLog(`GHAzDo is not enabled for this repo [${repoId}]`);
-            //     return values;
-            // }
+            if (!featuresEnabledResult || !featuresEnabledResult.advSecEnabled) {
+                consoleLog(`GHAzDo is not enabled for this repo [${repoId}]`);
+                return ({organization, project, repo, values});
+            }
 
             // todo: use pagination option, now: get the first 5000 alerts
             console.log(`Getting alerts for repo [${repoId}]`);
@@ -129,7 +148,7 @@ async function getAlertsForRepo(organization, projectName, repoId) {
             //authenticatedGet(url).then(alertResult => {
                 if (!alertResult || !alertResult.count) {
                     //consoleLog('alertResult is null');
-                    return values;
+                    return ({organization, project, repo, values});
                 }
                 else {
                     //consoleLog('alertResult count: ' + alertResult.count);
@@ -143,7 +162,7 @@ async function getAlertsForRepo(organization, projectName, repoId) {
                     values.secretAlerts = secretAlerts.length;
                     values.codeAlerts = codeAlerts.length;
 
-                    return values;
+                    return ({organization, project, repo, values});
                 }
             //});
         //});
@@ -152,8 +171,7 @@ async function getAlertsForRepo(organization, projectName, repoId) {
     catch (err) {
         consoleLog('error in calling the advec api: ' + err);
     }
-
-    //return values;
+    return (organization, project, repo, values);
 }
 
 async function getAlertsTrendLines(organization, projectName, repoId) {
@@ -362,11 +380,11 @@ async function getProjects(VSS, Service, CoreRestClient) {
 
 async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
 
-    consoleLog(`inside getRepos`);
+    //consoleLog(`inside getRepos`);
     const webContext = VSS.getWebContext();
     const project = webContext.project;
     let projectNameForSearch = projectName ? projectName : project.name;
-    consoleLog($`Searching for repos in project with name [${projectNameForSearch}]`);
+    //consoleLog($`Searching for repos in project with name [${projectNameForSearch}]`);
 
     const documentCollection = `repos`;
     const documentId = `repositoryList-${projectNameForSearch}`;
@@ -400,7 +418,7 @@ async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
         }
     }
 
-    consoleLog(`Loading repositories from the API for project [${projectNameForSearch}]`);
+    //consoleLog(`Loading repositories from the API for project [${projectNameForSearch}]`);
     try {
         const gitClient = Service.getClient(GitWebApi.GitHttpClient);
         let repos = await gitClient.getRepositories(projectNameForSearch);
@@ -411,17 +429,20 @@ async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
         repos = repos.map(repo => {
             return {
                 name: repo.name,
-                id: repo.id
+                id: repo.id,
+                size: repo.size,
             }
         });
-        //consoleLog(`Converted repos to: ${JSON.stringify(repos)}`);
+        //consoleLog(`Found [${repos.length}] repos`);
 
-        // save the repos to the document store for next time
-        try {
-            await saveDocument(VSS, documentCollection, documentId, repos);
-        }
-        catch (err) {
-            console.log(`Error saving the available repos to document store: ${JSON.stringify(err)}`);
+        if (useCache) {
+            // save the repos to the document store for next time
+            try {
+                await saveDocument(VSS, documentCollection, documentId, repos);
+            }
+            catch (err) {
+                console.log(`Error saving the available repos to document store: ${JSON.stringify(err)}`);
+            }
         }
         return repos;
     }
