@@ -2,6 +2,7 @@
 Extension for Azure DevOps that shows the number of open security alerts for the configured repository. Please install it and let me know what you think! Create an issue for feedback or feature requests.
 Install the extension from the Azure DevOps marketplace: https://marketplace.visualstudio.com/items?itemName=RobBos.GHAzDoWidget
 
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/rajbos/GHAzDo-widget/badge)](https://securityscorecards.dev/viewer/?uri=github.com/rajbos/GHAzDo-widget)
 
 ## Widgets:
 * Show all three alert counts in one widget in 2 by 1 layout
