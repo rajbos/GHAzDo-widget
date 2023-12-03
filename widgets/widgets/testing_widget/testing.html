@@ -179,7 +179,7 @@
                         while (activeCalls > 0) {
                             // wait for the last batch to complete
                             console.log(`Waiting for the last [${activeCalls}] project calls to complete`);
-                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            await new Promise(resolve => setTimeout(resolve, 500));
                         }
                         console.log(`All project calls completed`);
 

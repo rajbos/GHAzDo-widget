@@ -80,3 +80,32 @@ async function createPieChart($container, chartService, alertSeverityCount, widg
         console.log(`Error creating pie chart: ${err}`);
     }
 }
+
+async function renderPieChart(organization, projectName, repoId, $container, chartService, alertType, widgetSize) {
+    consoleLog('renderPieChart');
+    try {
+        // get the trend data for alerts first
+        const alertSeverityCount = await getAlertSeverityCounts(organization, projectName, repoId, alertType);
+
+        createPieChart($container, chartService, alertSeverityCount, widgetSize);
+    }
+    catch (err) {
+        consoleLog(`Error loading the alerts pie: ${err}`);
+    }
+}
+
+async function renderTrendLine(organization, projectName, repoId, $container, chartService, widgetSize) {
+    consoleLog('renderTrendLine');
+    try {
+        // get the trend data for alerts first
+        const alertTrendLines = await getAlertsTrendLines(organization, projectName, repoId)
+        consoleLog('Dependencies AlertTrend: ' +  JSON.stringify(alertTrendLines.dependencyAlertsTrend));
+        consoleLog('Code scanning AlertTrend: ' +  JSON.stringify(alertTrendLines.codeAlertsTrend));
+        consoleLog('Secrets AlertTrend: ' +  JSON.stringify(alertTrendLines.secretAlertsTrend));
+
+        createChart($container, chartService, alertTrendLines, widgetSize);
+    }
+    catch (err) {
+        consoleLog(`Error loading the alerts trend: ${err}`);
+    }
+}
