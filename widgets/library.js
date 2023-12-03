@@ -19,7 +19,9 @@ function getAuthHeader() {
 }
 
 var callCounter = 0;
+var getProjectCalls = [];
 var getAlertCalls = [];
+var activeCalls = 0;
 function authenticatedGet(url) {
     return getAuthHeader()
         .then(authHeader =>
