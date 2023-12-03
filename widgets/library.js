@@ -31,13 +31,26 @@ function authenticatedGet(url) {
         })
         )
         .then(response => {
+            callCounter++;
+
+            // Handle 404 error
+            if (response.status === 404) {
+                console.error(`Resource not found on url [${url}]`);
+            }
+
             // only show the response headers on httpOk
             if (response.status == !200 && response.status == !400 && response.status == !403) {
                 console.log(`Headers for [${url}] with status [${response.status}]:`)
-                response.headers.forEach((value, name) => console.log(`${name}: ${value}`));
+                response.headers.forEach((value, name) => console.log(`${name}: ${value}`))
             }
-            callCounter++;
-            return response.json()
+
+            if (response.status === 200) {
+                return response.json()
+            }
+            else {
+                // return null so the caller can handle the result themselves
+                return null
+            }
         });
 }
 class AlertType {
@@ -122,7 +135,7 @@ async function getAlertsForRepo(organization, projectName, repoId, project, repo
         //authenticatedGet(url).then(featuresEnabledResult => {
             if (!featuresEnabledResult || !featuresEnabledResult.advSecEnabled) {
                 consoleLog(`GHAzDo is not enabled for this repo [${repoId}]`);
-                return (organization, project, repo, values);
+                return ({organization, project, repo, values});
             }
 
             // todo: use pagination option, now: get the first 5000 alerts
@@ -133,7 +146,7 @@ async function getAlertsForRepo(organization, projectName, repoId, project, repo
             //authenticatedGet(url).then(alertResult => {
                 if (!alertResult || !alertResult.count) {
                     //consoleLog('alertResult is null');
-                    return (organization, project, repo, values = {count: 0, dependencyAlerts: 0, secretAlerts: 0, codeAlerts: 0});
+                    return ({organization, project, repo, values});
                 }
                 else {
                     //consoleLog('alertResult count: ' + alertResult.count);
@@ -147,7 +160,7 @@ async function getAlertsForRepo(organization, projectName, repoId, project, repo
                     values.secretAlerts = secretAlerts.length;
                     values.codeAlerts = codeAlerts.length;
 
-                    return (organization, project, repo, values);
+                    return ({organization, project, repo, values});
                 }
             //});
         //});

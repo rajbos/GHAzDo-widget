@@ -33,18 +33,18 @@
                         //const linkBase = `https://dev.azure.com/${organization}/${projectName}/_security`;
                         // set the alert counts
                         var currentValue = parseInt(dependencyAlertCount.text());
-                        dependencyAlertCount.text(currentValue + alerts.dependencyAlerts);
+                        dependencyAlertCount.text(currentValue + alerts.values.dependencyAlerts);
                         //const dependencyLinkValue = `${linkBase}?_t=dependencies`;
                         //const dependencyLink = $('a.dependency-link');
                         //dependencyLink.attr('href', dependencyLinkValue);
 
                         var currentValue = parseInt(secretAlertCount.text());
-                        secretAlertCount.text(currentValue + alerts.secretAlerts);
+                        secretAlertCount.text(currentValue + alerts.values.secretAlerts);
                         //const secretLinkValue = `${linkBase}?_t=secrets`;
                         //secretLink.attr('href', secretLinkValue);
 
                         var currentValue = parseInt(codeAlertCount.text());
-                        codeAlertCount.text(currentValue + alerts.codeAlerts);
+                        codeAlertCount.text(currentValue + alerts.values.codeAlerts);
                         //const codeLinkValue = `${linkBase}?_t=codescanning`;
                         //codeLink.attr('href', codeLinkValue);
 
@@ -65,7 +65,7 @@
                     }
 
                     function showAlertInfo(organization, project, repo, repoAlerts, $queryinfocontainer, doing) {
-                        if (repoAlerts) {
+                        if (repoAlerts && repoAlerts.values) {
                             const $projectli = $queryinfocontainer.find(`#${project.id}`);
                             const $projectul = $projectli.find('ul');
                             //consoleLog(`Found [${JSON.stringify(repoAlerts)}] dependency alerts for repo [${repo.name}]`)
