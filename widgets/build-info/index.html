@@ -80,7 +80,7 @@
                 console.log('TFS_Build_webApi: ' + dumpObject(TFS_Build_webApi));
 
                 var context = VSS.getWebContext();
-                document.getElementById("context-display").textContent += "Hello, is it me you're looking for? ";
+                document.getElementById("context-display").textContent += "Context from init ";
                 registerContribution(VSS.getContribution());
                 VSS.notifyLoadSucceeded();
             });

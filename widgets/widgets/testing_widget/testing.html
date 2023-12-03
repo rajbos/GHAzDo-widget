@@ -30,27 +30,18 @@
                     const endDateTime = $('p.endDateTime');
 
                     function setAlertValues(alerts, organization, projectName, doing) {
-                        //const linkBase = `https://dev.azure.com/${organization}/${projectName}/_security`;
                         // set the alert counts
                         var currentValue = parseInt(dependencyAlertCount.text());
                         dependencyAlertCount.text(currentValue + alerts.values.dependencyAlerts);
-                        //const dependencyLinkValue = `${linkBase}?_t=dependencies`;
-                        //const dependencyLink = $('a.dependency-link');
-                        //dependencyLink.attr('href', dependencyLinkValue);
 
                         var currentValue = parseInt(secretAlertCount.text());
                         secretAlertCount.text(currentValue + alerts.values.secretAlerts);
-                        //const secretLinkValue = `${linkBase}?_t=secrets`;
-                        //secretLink.attr('href', secretLinkValue);
 
                         var currentValue = parseInt(codeAlertCount.text());
                         codeAlertCount.text(currentValue + alerts.values.codeAlerts);
-                        //const codeLinkValue = `${linkBase}?_t=codescanning`;
-                        //codeLink.attr('href', codeLinkValue);
 
                         // keep track of global state:
-                        endDateTime.text('end: ' + (new Date()).toISOString());
-
+                        endDateTime.text('End: ' + (new Date()).toISOString());
                         callCounterEl.text(`Call counter: ${callCounter} | Active connections: ${doing}`);
                     }
 
@@ -240,7 +231,7 @@
                                 try {
                                     // log the current time
                                     var startDateTime = $('p.startDateTime');
-                                    startDateTime.text('start: ' + (new Date()).toISOString());
+                                    startDateTime.text('Start: ' + (new Date()).toISOString());
 
                                     const projects = await getProjects(VSS, Service, RestClient);
                                     consoleLog(`Found [${projects?.length}] projects`);
@@ -307,7 +298,8 @@
                 </a>
             </div>
             <div id="query-info-container" class="column-container" style="font-size: 15px;text-align: left;display: block;">
-                Projects: </br>
+                <h1>Project overview:</h1>
+                </br>
             </div>
         </div>
     </body>
