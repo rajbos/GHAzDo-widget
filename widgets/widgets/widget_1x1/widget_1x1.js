@@ -21,7 +21,7 @@ async function loadWidget(widgetSettings, organization, projectName, VSS, Servic
             repoName = data.repo
             consoleLog(`loaded repoName from widgetSettings_1x1: [${repoName}] and id [${repoId}]`);
 
-            alerts = await getAlerts(organization, projectName, repoId);
+            alerts = (await getAlerts(organization, projectName, repoId)).values;
         }
         else {
             // load alerts for ALL repos in the project
@@ -36,9 +36,9 @@ async function loadWidget(widgetSettings, organization, projectName, VSS, Servic
                 // call and let the promise handle the rest
                 const repoAlerts = await getAlerts(organization, projectName, repo.id)
 
-                alerts.codeAlerts += repoAlerts.codeAlerts;
-                alerts.dependencyAlerts += repoAlerts.dependencyAlerts;
-                alerts.secretAlerts += repoAlerts.secretAlerts;
+                alerts.codeAlerts += repoAlerts.values.codeAlerts;
+                alerts.dependencyAlerts += repoAlerts.values.dependencyAlerts;
+                alerts.secretAlerts += repoAlerts.values.secretAlerts;
             }
         }
         consoleLog('alerts: ' +  JSON.stringify(alerts));

@@ -22,7 +22,7 @@ async function loadWidget(widgetSettings, organization, projectName) {
         var title = $('h2.ghazdo-title');
         title.text(`Security Alerts for ${repoName}`);
         title.attr('title', repoName);
-        alerts = await getAlerts(organization, projectName, repoId);
+        alerts = (await getAlerts(organization, projectName, repoId)).values;
         consoleLog('alerts: ' +  JSON.stringify(alerts));
 
         // GHAS is only available on the SaaS version, so we can hardcode the domain
