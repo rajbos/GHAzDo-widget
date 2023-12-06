@@ -69,10 +69,10 @@ async function createHubChart({chartService, containerElement, titleElement, org
                 }
                 break
         }
-        consoleLog('rendered chart')
+        consoleLog('Rendered chart')
     }
     else {
-        consoleLog('configuration is needed first, opening with empty values')
+        consoleLog('Configuration is needed first, opening with empty values')
         // set the tile to indicate config is needed
         titleElement.textContent = `Configure the widget to get Advanced Security alerts trend information`
     }

@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <script type="text/javascript">
-            // declare global variables
-            ///var callCounter = 0;
-        </script>
-
         <script src="../../../lib/VSS.SDK.min.js"></script>
         <script src="../../library.js"></script>
         <script src="../widget_1x1/widget_1x1.js"></script>
@@ -247,8 +242,6 @@
 
                                     const projects = await getProjects(VSS, Service, RestClient);
                                     consoleLog(`Found [${projects?.length}] projects`);
-                                    // sort the projects based on the name
-                                    projects.sort((a, b) => (a.name > b.name) ? 1 : -1);
 
                                     showProjectInfo(VSS, Service, GitWebApi, organization, projects)
                                 }

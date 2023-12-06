@@ -15,14 +15,17 @@
             });
 
         VSS.require([
+                    "VSS/Service",
                     "TFS/Dashboards/WidgetHelpers",
                     "Charts/Services",
                     "VSS/Context",
-                    "VSS/Authentication/Services"
+                    //"VSS/Authentication/Services",
+                    "TFS/VersionControl/GitRestClient",
+                    "TFS/Core/RestClient"
                 ],
 
             // top level function
-            async function (WidgetHelpers, Services, context) {
+            async function (Service, WidgetHelpers, Services, context, GitWebApi, RestClient) {
                 consoleLog('VSS.require function');
                 try {
                     consoleLog('VSS.register Hub function');
@@ -39,10 +42,22 @@
                     consoleLog('project name: ' + projectName);
                     consoleLog('organization name: ' + organization);
 
-                    const titleElement = $('h2.ghazdoTitle')[0];
-                    const containerElement = $('#Chart-Container')[0];
+                    // load all project data
+                    const progressDivContainer = $('#LoadingInfoContainer')[0];
+                    const progressDiv = {
+                        projectCount: $(progressDivContainer).find('.projectCount')[0],
+                        repoCount: $(progressDivContainer).find('.repoCount')[0],
+                        dependencyAlertCount: $(progressDivContainer).find('.dependencyAlertCount')[0],
+                        secretAlertCount: $(progressDivContainer).find('.secretAlertCount')[0],
+                        codeAlertCount: $(progressDivContainer).find('.codeAlertCount')[0]
+                    }
+                    const projects = await getProjects(VSS, Service, RestClient);
+                    consoleLog(`Found [${projects?.length}] projects`);
+                    loadAllAlertsFromAllRepos(VSS, Service, GitWebApi, organization, projects, progressDiv)
 
                     // create the charts
+                    const titleElement = $('h2.ghazdoTitle')[0];
+                    const containerElement = $('#Chart-Container')[0];
                     await createCharts({chartService, containerElement, titleElement, projectName, organization});
 
                     consoleLog('returning WidgetStatusHelper.Success()');
@@ -55,9 +70,34 @@
         );
     </script>
 
-    <div class="widget">
-        <h2 class="loadingTitle">Loading information div</h2>
-        <div id="LoadingInfoContainer"></div>
+    <div class="widget" id="progressDivContainer">
+        <h2 class="loadingTitle">Loading information</h2>
+        <div id="LoadingInfoContainer" class="column-container">
+            <div class="column">
+                <h3>Projects</h3>
+                <p class="alertValue projectCount">0</p>
+            </div>
+
+            <div class="column">
+                <h3>Repos</h3>
+                <p class="alertValue repoCount">0</p>
+            </div>
+
+            <div class="column">
+                <h3>Dependencies</h3>
+                <p class="alertValue dependencyAlertCount">0</p>
+            </div>
+
+            <div class="column">
+                <h3>Secrets</h3>
+                <p class="alertValue secretAlertCount">0</p>
+            </div>
+
+            <div class="column">
+                <h3>Code</h3>
+                <p class="alertValue codeAlertCount">0</p>
+            </div>
+        </div>
     </div>
 
     <div class="widget">
@@ -76,6 +116,10 @@
 
         .region-headerBreadcrumb {
            display: none;
+        }
+
+        #progressDivContainer {
+            width: 435px;
         }
     </style>
 </body>

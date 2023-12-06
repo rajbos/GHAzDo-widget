@@ -361,6 +361,10 @@ async function getProjects(VSS, Service, CoreRestClient) {
                 id: project.id
             }
         });
+
+        // sort the projects based on the name
+        projects.sort((a, b) => (a.name > b.name) ? 1 : -1);
+
         //consoleLog(`Converted projects to: ${JSON.stringify(projects)}`);
 
         // save the repos to the document store for next time
@@ -375,6 +379,128 @@ async function getProjects(VSS, Service, CoreRestClient) {
     catch (err) {
         console.log(`Error loading the available projects: ${err}`);
         return null;
+    }
+}
+
+const batchTimeOut = 1000
+const repoBatchSize = 100
+async function loadAllAlertsFromAllRepos(VSS, Service, GitWebApi, organization, projects, progressDiv) {
+    consoleLog(`Loading all alerts from all repos for organization [${organization}] for [${projects.length}] projects`);
+    // prepare the list of project calls to make
+    for (let index in projects) {
+        const project = projects[index];
+        //$queryinfocontainer.append(`<li id="${project.id}">${project.name}</li>\n`);
+
+        // place the repo definition in the array to process later
+        getProjectCalls.push({organization, project});
+    }
+    progressDiv.projectCount.textContent = `${projects.length}`
+
+    // wait for all the project promises to complete
+    console.log(`Waiting for [${getProjectCalls.length}] calls to complete`);
+    let position = 0;
+    let waiting = 0;
+    let alertBatchSize = repoBatchSize; // size of the calls to run at once
+    activeCalls = 0; // reset the active calls counter
+    let i = 0
+    while (i < getProjectCalls.length) {
+        if (activeCalls < alertBatchSize) {
+            let work = getProjectCalls[i];
+
+            // do the work, don't wait for it to complete to speed things up
+            getRepos(VSS, Service, GitWebApi, work.project.name, false).then(repos => {
+                activeCalls--;
+                showRepoInfo(repos, work.project, work.organization, progressDiv, activeCalls)
+            }).
+            catch(error => {
+                console.error(`Error handling get repos for ${work.project.name}: ${error}`);
+                activeCalls--;
+            })
+
+            activeCalls++;
+            i++
+        }
+        else {
+            //showCallStatus();
+            // wait for the next batch to complete
+            await new Promise(resolve => setTimeout(resolve, batchTimeOut));
+        }
+    }
+
+    while (activeCalls > 0) {
+        // wait for the last batch to complete
+        console.log(`Waiting for the last [${activeCalls}] project calls to complete`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    console.log(`All project calls completed`);
+
+    // loop over the alertCall array and load the alerts for each repo
+    position = 0;
+    waiting = 0;
+    alertBatchSize = 50; // size of the calls to run at once
+    activeCalls = 0;
+    i = 0
+    const repos = null // required param, but not used
+    while (i < getAlertCalls.length) {
+        if (activeCalls < alertBatchSize) {
+            let work = getAlertCalls[i];
+            // do the work
+            getAlerts(work.organization, work.project.name, work.repo.id, repos, work.project, work.repo).then(repoAlerts => {
+                activeCalls--;
+                showAlertInfo(work.organization, work.project, work.repo, repoAlerts, progressDiv, activeCalls)
+                //todo: store the overall results: results.push(repoAlerts);
+            }).
+            catch(error => {
+                console.error(`Error handling get alerts for ${work.repo.name}: ${error}`);
+                activeCalls--;
+            })
+
+            activeCalls++;
+            i++
+        }
+        else
+        {
+            showCallStatus();
+            // wait some time before starting the next batch
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+    }
+}
+async function showRepoInfo(repos, project, organization, progressDiv, activeCalls) {
+    consoleLog(`Found [${repos?.length}] repos for project [${project.name}] to load alerts for`);
+
+    var currentValue = parseInt(progressDiv.repoCount.textContent);
+    progressDiv.repoCount.textContent = currentValue + repos?.length
+
+    // load the work to load the alerts for all repos
+    for (let repoIndex in repos) {
+        const repo = repos[repoIndex];
+        // only load the alerts if the repo has a size, otherwise it is still an empty repo
+        if (repo.size > 0) {
+            // add work definition to array
+            getAlertCalls.push({organization, project, repo});
+        }
+    }
+}
+
+function showAlertInfo(organization, project, repo, repoAlerts, progressDiv, activeCalls) {
+    if (repoAlerts && repoAlerts.values) {
+        //consoleLog(`Found [${JSON.stringify(repoAlerts)}] dependency alerts for repo [${repo.name}]`)
+
+        // show the alert counts
+        // todo: store the current count and skip the parsing
+        var currentValue = parseInt(progressDiv.dependencyAlertCount.textContent)
+        progressDiv.dependencyAlertCount.textContent =  currentValue + repoAlerts.values.dependencyAlerts
+
+        var currentValue = parseInt(progressDiv.secretAlertCount.textContent)
+        progressDiv.secretAlertCount.textContent = currentValue + repoAlerts.values.secretAlerts
+
+        var currentValue = parseInt(progressDiv.codeAlertCount.textContent)
+        progressDiv.codeAlertCount.textContent = currentValue + repoAlerts.values.codeAlerts
+
+        // keep track of global state:
+        // endDateTime.text('End: ' + (new Date()).toISOString())
+        // showCallStatus()
     }
 }
 
@@ -465,25 +591,28 @@ async function getAlertSeverityCounts(organization, projectName, repoId, alertTy
         url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=${apiVersion}`;
         //consoleLog(`Calling url: [${url}]`);
         const alertResult = await authenticatedGet(url);
-        //consoleLog('alertResult: ' + JSON.stringify(alertResult));
-        consoleLog(`total alertResult count: ${alertResult.count} for alertType [${alertType.name}]`);
 
-        // group the alerts based on the severity
-        try {
-            consoleLog(`severityClasses.length: [${severityClasses.length}]`);
+        if (alertResult && alertResult.count) {
+            //consoleLog('alertResult: ' + JSON.stringify(alertResult));
+            consoleLog(`total alertResult count: ${alertResult.count} for alertType [${alertType.name}]`);
 
-            for (let index in severityClasses) {
-                let severityClass = severityClasses[index];
-                const severityAlertCount = alertResult.value.filter(alert => alert.severity === severityClass.severity);
-                consoleLog(`severityClass [${severityClass.severity}] has [${severityAlertCount.length}] alerts`);
-                severityClass.count = severityAlertCount.length;
-            };
+            // group the alerts based on the severity
+            try {
+                consoleLog(`severityClasses.length: [${severityClasses.length}]`);
+
+                for (let index in severityClasses) {
+                    let severityClass = severityClasses[index];
+                    const severityAlertCount = alertResult.value.filter(alert => alert.severity === severityClass.severity);
+                    consoleLog(`severityClass [${severityClass.severity}] has [${severityAlertCount.length}] alerts`);
+                    severityClass.count = severityAlertCount.length;
+                };
+            }
+            catch (err) {
+                consoleLog('error in grouping the alerts: ' + err);
+            }
+
+            consoleLog('severityClasses summarized: ' + JSON.stringify(severityClasses));
         }
-        catch (err) {
-            consoleLog('error in grouping the alerts: ' + err);
-        }
-
-        consoleLog('severityClasses summarized: ' + JSON.stringify(severityClasses));
     }
     catch (err) {
         consoleLog('error in calling the advec api: ' + err);
