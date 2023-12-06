@@ -39,11 +39,11 @@
                     consoleLog('project name: ' + projectName);
                     consoleLog('organization name: ' + organization);
 
-                    const titleElement = $('h2.ghazdoTitle');
-                    const containerElement = $('#Chart-Container');
+                    const titleElement = $('h2.ghazdoTitle')[0];
+                    const containerElement = $('#Chart-Container')[0];
 
                     // create the charts
-                    createCharts(chartService, organization, projectName, containerElement, titleElement);
+                    await createCharts({chartService, containerElement, titleElement, projectName, organization});
 
                     consoleLog('returning WidgetStatusHelper.Success()');
                 }

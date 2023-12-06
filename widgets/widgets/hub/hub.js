@@ -1,11 +1,11 @@
-async function createCharts(chartService, organization, projectName, containerElement, titleElement) {
+async function createCharts({chartService, containerElement, titleElement, projectName, organization}) {
 
-    createChart(chartService, containerElement, titleElement, organization, projectName);
+    await createHubChart({chartService, containerElement, titleElement, organization, projectName});
 }
 
-async function createChart(chartService, containerElement, titleElement, organization, projectName) {
+async function createHubChart({chartService, containerElement, titleElement, organization, projectName}) {
 
-    consoleLog("Starting to create chart");
+    consoleLog(`Starting to create chart for organization: [${organization}] and project: [${projectName}]`);
 
     if (!chartService) {
         consoleLog("chartService is null");
@@ -42,7 +42,7 @@ async function createChart(chartService, containerElement, titleElement, organiz
         repoName = data.repo;
         repoId = data.repoId;
 
-        containerElement.text(`${data.repo}`)
+        containerElement.textContent = `${data.repo}`
 
         const chartSize = {
             columnSpan: 2
@@ -51,29 +51,29 @@ async function createChart(chartService, containerElement, titleElement, organiz
         switch (chartType) {
             case "2":
                 try {
-                    const alertType = GetAlertTypeFromValue(alertTypeConfig);
-                    titleElement.text(`${alertType.display} Alerts by Severity`)
-                    renderPieChart(organization, projectName, repoId, containerElement, chartService, alertType, chartSize);
+                    const alertType = GetAlertTypeFromValue(alertTypeConfig)
+                    titleElement.textContent = `${alertType.display} Alerts by Severity`
+                    await renderPieChart(organization, projectName, repoId, containerElement, chartService, alertType, chartSize)
                 }
                 catch (err) {
-                    consoleLog(`Error loading the alerts pie: ${err}`);
+                    consoleLog(`Error loading the alerts pie: ${err}`)
                 }
                 break;
             default:
                 try {
-                    titleElement.text(`Advanced Security Alerts Trend`)
-                    renderTrendLine(organization, projectName, repoId, containerElement, chartService, chartSize);
+                    titleElement.textContent = `Advanced Security Alerts Trend`
+                    await renderTrendLine(organization, projectName, repoId, containerElement, chartService, chartSize)
                 }
                 catch (err) {
-                    consoleLog(`Error loading the alerts trend: ${err}`);
+                    consoleLog(`Error loading the alerts trend: ${err}`)
                 }
-                break;
+                break
         }
-        consoleLog('rendered chart');
+        consoleLog('rendered chart')
     }
     else {
-        consoleLog('configuration is needed first, opening with empty values');
+        consoleLog('configuration is needed first, opening with empty values')
         // set the tile to indicate config is needed
-        titleElement.text(`Configure the widget to get Advanced Security alerts trend information`);
+        titleElement.textContent = `Configure the widget to get Advanced Security alerts trend information`
     }
 }
