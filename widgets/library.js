@@ -383,7 +383,7 @@ async function getProjects(VSS, Service, CoreRestClient) {
 }
 
 const batchTimeOut = 1000
-const repoBatchSize = 100
+const repoBatchSize = 50
 async function loadAllAlertsFromAllRepos(VSS, Service, GitWebApi, organization, projects, progressDiv) {
     consoleLog(`Loading all alerts from all repos for organization [${organization}] for [${projects.length}] projects`);
     // prepare the list of project calls to make
@@ -421,7 +421,7 @@ async function loadAllAlertsFromAllRepos(VSS, Service, GitWebApi, organization, 
             i++
         }
         else {
-            //showCallStatus();
+            showCallStatus();
             // wait for the next batch to complete
             await new Promise(resolve => setTimeout(resolve, batchTimeOut));
         }
@@ -433,6 +433,7 @@ async function loadAllAlertsFromAllRepos(VSS, Service, GitWebApi, organization, 
         await new Promise(resolve => setTimeout(resolve, 500));
     }
     console.log(`All project calls completed`);
+    showCallStatus();
 
     // loop over the alertCall array and load the alerts for each repo
     position = 0;
@@ -465,12 +466,29 @@ async function loadAllAlertsFromAllRepos(VSS, Service, GitWebApi, organization, 
             await new Promise(resolve => setTimeout(resolve, 500));
         }
     }
+
+    while (activeCalls > 0) {
+        // wait for the last batch to complete
+        console.log(`Waiting for the last [${activeCalls}] alert calls to complete`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    // now all the alerts have been loaded, so we can show the results
+    var header = document.querySelector('.loadingTitle');
+    // Add the loading class to the header
+    header.classList.remove('loading');
 }
 async function showRepoInfo(repos, project, organization, progressDiv, activeCalls) {
-    consoleLog(`Found [${repos?.length}] repos for project [${project.name}] to load alerts for`);
+    const repoCount = repos?.length
+    consoleLog(`Found [${repoCount}] repos for project [${project.name}] to load alerts for`);
+
+    if (isNaN(repoCount)) {
+        // prevent issues with the count (would result in NaN)
+        return
+    }
 
     var currentValue = parseInt(progressDiv.repoCount.textContent);
-    progressDiv.repoCount.textContent = currentValue + repos?.length
+    progressDiv.repoCount.textContent = currentValue + repoCount
 
     // load the work to load the alerts for all repos
     for (let repoIndex in repos) {
@@ -480,6 +498,51 @@ async function showRepoInfo(repos, project, organization, progressDiv, activeCal
             // add work definition to array
             getAlertCalls.push({organization, project, repo});
         }
+    }
+}
+
+let debugInfo = null
+function showCallStatus() {
+    if (!debugInfo) {
+        debugInfo = document.querySelector('#debugInfo')
+        if (debugInfo) {
+            // add start time to the debug info objects data-property
+            debugInfo.dataset.startTime = new Date()
+        }
+    }
+
+    if (debugInfo) {
+        // calculate the duration
+        const startDateTime = new Date(debugInfo.dataset.startTime)
+        const endDateTime = new Date()
+        const duration = endDateTime - startDateTime
+        let seconds = 0
+        if (duration < 60000) {
+            seconds = Math.round(duration / 1000)
+        }
+        else {
+            seconds = Math.round((duration % 60000) / 1000)
+        }
+
+        let durationSecondsText = ''
+        if (seconds < 10) {
+            durationSecondsText = `0${seconds}`
+        }
+        else {
+            durationSecondsText = `${seconds}`
+        }
+
+        const durationMinutes = Math.round(duration / 60000)
+        let durationMinutesText = ''
+        if (durationMinutes < 10) {
+            durationMinutesText = `0${durationMinutes}`
+        }
+        else {
+            durationMinutesText = `${durationMinutes}`
+        }
+        const durationText = `${durationMinutesText}:${durationSecondsText}`
+
+        debugInfo.textContent = `Call counter: ${callCounter} | Active connections: ${activeCalls} | Duration: ${durationText}`
     }
 }
 
@@ -500,55 +563,55 @@ function showAlertInfo(organization, project, repo, repoAlerts, progressDiv, act
 
         // keep track of global state:
         // endDateTime.text('End: ' + (new Date()).toISOString())
-        // showCallStatus()
+        showCallStatus()
     }
 }
 
 async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
 
-    //consoleLog(`inside getRepos`);
-    const webContext = VSS.getWebContext();
-    const project = webContext.project;
-    let projectNameForSearch = projectName ? projectName : project.name;
-    //consoleLog($`Searching for repos in project with name [${projectNameForSearch}]`);
+    //consoleLog(`inside getRepos`)
+    const webContext = VSS.getWebContext()
+    const project = webContext.project
+    let projectNameForSearch = projectName ? projectName : project.name
+    //consoleLog($`Searching for repos in project with name [${projectNameForSearch}]`)
 
-    const documentCollection = `repos`;
-    const documentId = `repositoryList-${projectNameForSearch}`;
+    const documentCollection = `repos`
+    const documentId = `repositoryList-${projectNameForSearch}`
 
     // needed to clean up
-    //removeDocument(VSS, documentCollection, documentId);
+    //removeDocument(VSS, documentCollection, documentId)
 
     if (useCache) {
         try {
-            const document = await getSavedDocument(VSS, documentCollection, documentId);
-            consoleLog(`document inside getRepos: ${JSON.stringify(document)}`);
+            const document = await getSavedDocument(VSS, documentCollection, documentId)
+            consoleLog(`document inside getRepos: ${JSON.stringify(document)}`)
             if (document || document?.data?.length > 0) {
-                consoleLog(`Loaded repos from document store. Last updated [${document.lastUpdated}]`);
+                consoleLog(`Loaded repos from document store. Last updated [${document.lastUpdated}]`)
                 // get the data type of lastUpdated
                 consoleLog(`typeof document.lastUpdated: ${typeof document.lastUpdated}`)
                 // if data.lastUpdated is older then 1 hour, then refresh the repos
-                const diff = new Date() - new Date(document.lastUpdated);
-                const diffHours = Math.floor(diff / 1000 / 60 / 60);
-                const cacheDuration = 4;
+                const diff = new Date() - new Date(document.lastUpdated)
+                const diffHours = Math.floor(diff / 1000 / 60 / 60)
+                const cacheDuration = 4
                 if (diffHours < cacheDuration) {
-                    consoleLog(`Repos are less then ${cacheDuration} hour old, so using the cached version. diffHours [${diffHours}]`);
-                    return document.data;
+                    consoleLog(`Repos are less then ${cacheDuration} hour old, so using the cached version. diffHours [${diffHours}]`)
+                    return document.data
                 }
                 else {
-                    consoleLog(`Repos are older then ${cacheDuration} hour, so refreshing the repo list is needed. diffHours [${diffHours}]`);
+                    consoleLog(`Repos are older then ${cacheDuration} hour, so refreshing the repo list is needed. diffHours [${diffHours}]`)
                 }
             }
         }
         catch (err) {
-            console.log(`Error loading the available repos from document store: ${err}`);
+            console.log(`Error loading the available repos from document store: ${err}`)
         }
     }
 
     //consoleLog(`Loading repositories from the API for project [${projectNameForSearch}]`);
     try {
-        const gitClient = Service.getClient(GitWebApi.GitHttpClient);
-        let repos = await gitClient.getRepositories(projectNameForSearch);
-        callCounter++;
+        const gitClient = Service.getClient(GitWebApi.GitHttpClient)
+        let repos = await gitClient.getRepositories(projectNameForSearch)
+        callCounter++
         //consoleLog(`Found these repos: ${JSON.stringify(repos)}`);
 
         // convert the repos to a simple list of names and ids:
@@ -558,23 +621,23 @@ async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
                 id: repo.id,
                 size: repo.size,
             }
-        });
-        //consoleLog(`Found [${repos.length}] repos`);
+        })
+        //consoleLog(`Found [${repos.length}] repos`)
 
         if (useCache) {
             // save the repos to the document store for next time
             try {
-                await saveDocument(VSS, documentCollection, documentId, repos);
+                await saveDocument(VSS, documentCollection, documentId, repos)
             }
             catch (err) {
-                console.log(`Error saving the available repos to document store: ${JSON.stringify(err)}`);
+                console.log(`Error saving the available repos to document store: ${JSON.stringify(err)}`)
             }
         }
-        return repos;
+        return repos
     }
     catch (err) {
-        console.log(`Error loading the available repos: ${err}`);
-        return null;
+        console.log(`Error loading the available repos: ${err}`)
+        return null
     }
 }
 

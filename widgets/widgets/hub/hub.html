@@ -42,6 +42,11 @@
                     consoleLog('project name: ' + projectName);
                     consoleLog('organization name: ' + organization);
 
+                    // Get the header element
+                    var header = document.querySelector('.loadingTitle');
+                    // Add the loading class to the header
+                    header.classList.add('loading');
+
                     // load all project data
                     const progressDivContainer = $('#LoadingInfoContainer')[0];
                     const progressDiv = {
@@ -71,7 +76,11 @@
     </script>
 
     <div class="widget" id="progressDivContainer">
-        <h2 class="loadingTitle">Loading information</h2>
+        <h2 class="loadingTitle2">Loading information</h2>
+        <div>
+            <div class="loadingTitle float"></div>
+            <div id="debugInfo" class="float float-break" date-startTime=""></div>
+        </div>
         <div id="LoadingInfoContainer" class="column-container">
             <div class="column">
                 <h3>Projects</h3>
@@ -120,6 +129,33 @@
 
         #progressDivContainer {
             width: 435px;
+        }
+
+        .float {
+            float: left;
+        }
+
+        .float-break {
+            clear: right;
+        }
+
+        #LoadingInfoContainer{
+            clear: left;
+        }
+
+        .loading {
+            border: 8px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 8px solid #3498db;
+            width: 8px;
+            height: 8px;
+            margin-right: 5px;
+            animation: spin 3s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </body>
