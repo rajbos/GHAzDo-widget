@@ -1,49 +1,80 @@
-async function createCharts({chartService, containerElement, titleElement, projectName, organization}) {
+async function createCharts({chartService, projectName, organization}) {
 
-    await createHubChart({chartService, containerElement, titleElement, organization, projectName});
+    // load the overall trend chart
+    const lineData = {
+        chartType: "1",
+        alertType: 1,
+        repo: "All repos",
+        repoId: "-1",
+        containerName: "ChartContainerOverallTrend",
+        titleName: "TitleOverallTrend"
+    }
+    await createHubChart({chartService, organization, projectName, data: lineData});
+
+    // load the overall dependency pie chart
+    const dependencyPieData = {
+        chartType: "2",
+        alertType: "1",
+        repo: "All repos",
+        repoId: "-1",
+        containerName: "ChartContainerOverallDependencyPie",
+        titleName: "TitleOverallDependencyPie"
+    }
+    await createHubChart({chartService, organization, projectName, data: dependencyPieData});
+
+    // load the overall code scanning chart
+    const codeScanningPieData = {
+        chartType: "2",
+        alertType: AlertType.CODE.value.toString(),
+        repo: "All repos",
+        repoId: "-1",
+        containerName: "ChartContainerOverallCodeScanningPie",
+        titleName: "TitleOverallCodeScanningPie"
+    }
+    await createHubChart({chartService, organization, projectName, data: codeScanningPieData});
 }
 
-async function createHubChart({chartService, containerElement, titleElement, organization, projectName}) {
+async function createHubChart({chartService, organization, projectName, data}) {
 
     consoleLog(`Starting to create chart for organization: [${organization}] and project: [${projectName}]`);
+    const containerElement = document.getElementById(data.containerName);
+    if (!containerElement) {
+        consoleLog(`containerElement is null for containerName: [${data.containerName}]`);
+    }
+    const titleElement = document.getElementById(data.titleName);
+    if (!titleElement) {
+        consoleLog(`titleElement is null for titleName: [${data.titleName}]`);
+    }
+
+    // check if the containerElement is empty, if not, clear it first
+    if (containerElement && containerElement.hasChildNodes()) {
+        while (containerElement.firstChild) {
+            containerElement.removeChild(containerElement.firstChild);
+        }
+    }
 
     if (!chartService) {
         consoleLog("chartService is null");
         return;
     }
 
-    const data = {
-            chartType: 1,
-            alertType: 1,
-            repo: "eShopOnWeb",
-            repoId: "5e5195e1-1b44-4d4b-9310-5d33ee2c4d6c"
-        }
-
-    let repoName
-    let repoId
-    // init empty object first
-    let alertTrendLines = {secretAlertTrend: [], dependencyAlertTrend: [], codeAlertsTrend: []};
     let chartType = 1;
     let alertTypeConfig = 1;
     if (data && data.chartType && data.chartType !== "") {
         chartType = data.chartType;
-        consoleLog('loaded chartType from widgetSettings: ' + chartType);
+        consoleLog(`loaded chartType from widgetSettings: ${chartType}`);
     }
     else {
-        consoleLog('chartType is not set, using default value: ' + chartType);
+        consoleLog(`chartType is not set, using default value: ${chartType}`);
     }
 
     if (data && data.alertType) {
         alertTypeConfig = data.alertType;
-        consoleLog('loaded alertType from widgetSettings: ' + alertTypeConfig);
+        consoleLog(`loaded alertType from widgetSettings: ${alertTypeConfig}`);
     }
 
     if (data && data.repo && data.repo !== "") {
-        repoName = data.repo;
-        repoId = data.repoId;
-
-        containerElement.textContent = `${data.repo}`
-
+        const repoId = data.repoId;
         const chartSize = {
             columnSpan: 2
         }
@@ -52,7 +83,9 @@ async function createHubChart({chartService, containerElement, titleElement, org
             case "2":
                 try {
                     const alertType = GetAlertTypeFromValue(alertTypeConfig)
-                    titleElement.textContent = `${alertType.display} Alerts by Severity`
+                    if (titleElement) {
+                        titleElement.textContent = `${alertType.display} Alerts by Severity`
+                    }
                     await renderPieChart(organization, projectName, repoId, containerElement, chartService, alertType, chartSize)
                 }
                 catch (err) {
@@ -61,7 +94,9 @@ async function createHubChart({chartService, containerElement, titleElement, org
                 break;
             default:
                 try {
-                    titleElement.textContent = `Advanced Security Alerts Trend`
+                    if (titleElement) {
+                        titleElement.textContent = `Advanced Security Alerts Trend`
+                    }
                     await renderTrendLine(organization, projectName, repoId, containerElement, chartService, chartSize)
                 }
                 catch (err) {
@@ -74,6 +109,8 @@ async function createHubChart({chartService, containerElement, titleElement, org
     else {
         consoleLog('Configuration is needed first, opening with empty values')
         // set the tile to indicate config is needed
-        titleElement.textContent = `Configure the widget to get Advanced Security alerts trend information`
+        if (containerElement) {
+            titleElement.textContent = `Configure the widget to get Advanced Security alerts trend information`
+        }
     }
 }

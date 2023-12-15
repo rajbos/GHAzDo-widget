@@ -120,6 +120,7 @@ async function getAlerts(organization, projectName, repoId, repos, project, repo
     }
 }
 
+let storedAlertData = null
 async function getAlertsForRepo(organization, projectName, repoId, project, repo) {
     //consoleLog('getAlerts');
     let values = {
@@ -162,6 +163,8 @@ async function getAlertsForRepo(organization, projectName, repoId, project, repo
                     values.secretAlerts = secretAlerts.length;
                     values.codeAlerts = codeAlerts.length;
 
+                    await storeAlerts(repoId, alertResult)
+
                     return ({organization, project, repo, values});
                 }
             //});
@@ -174,36 +177,54 @@ async function getAlertsForRepo(organization, projectName, repoId, project, repo
     return (organization, project, repo, values);
 }
 
-async function getAlertsTrendLines(organization, projectName, repoId) {
-    consoleLog(`getAlertsTrend for organization [${organization}], project [${projectName}], repo [${repoId}]`);
+async function storeAlerts(repoId, alertResult) {
+    if (!storedAlertData) {
+        storedAlertData = alertResult;
+    }
+    else {
+        storedAlertData.value = storedAlertData.value.concat(alertResult.value);
+        storedAlertData.count += alertResult.count;
+    }
+}
 
+async function getAlertsTrendLines(organization, projectName, repoId) {
+    consoleLog(`getAlertsTrend for organization [${organization}], project [${projectName}], repo [${repoId}]`)
     try {
-        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&api-version=${apiVersion}`;
-        consoleLog(`Calling url: [${url}]`);
-        const alertResult = await authenticatedGet(url);
-        //consoleLog('alertResult: ' + JSON.stringify(alertResult));
-        consoleLog('alertResult count: ' + alertResult.count);
+        alertResult = null
+        if (repoId === '-1') {
+            // load data from previously stored info
+            consoleLog('loading data from previously stored info')
+            alertResult = storedAlertData
+        }
+        else {
+            // load the alerts for the given repo
+            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&api-version=${apiVersion}`
+            consoleLog(`Calling url: [${url}]`)
+            alertResult = await authenticatedGet(url)
+            //consoleLog('alertResult: ' + JSON.stringify(alertResult))
+        }
+        consoleLog('alertResult count: ' + alertResult.count)
 
         // load the Secret alerts and create a trend line over the last 3 weeks
-        const secretAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.SECRET.name);
-        const secretAlertsTrend = getAlertsTrendLine(secretAlerts, 'secret');
-        console.log('');
+        const secretAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.SECRET.name)
+        const secretAlertsTrend = getAlertsTrendLine(secretAlerts, 'secret')
+        consoleLog('')
         // load the Dependency alerts and create a trend line over the last 3 weeks
-        const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name);
-        const dependencyAlertsTrend = getAlertsTrendLine(dependencyAlerts, 'dependency');
-        console.log('');
+        const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name)
+        const dependencyAlertsTrend = getAlertsTrendLine(dependencyAlerts, 'dependency')
+        consoleLog('')
         // load the Code alerts and create a trend line over the last 3 weeks
-        const codeAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.CODE.name);
-        const codeAlertsTrend = getAlertsTrendLine(codeAlerts, 'code');
+        const codeAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.CODE.name)
+        const codeAlertsTrend = getAlertsTrendLine(codeAlerts, 'code')
 
         return {
                 secretAlertsTrend: secretAlertsTrend,
                 dependencyAlertsTrend: dependencyAlertsTrend,
                 codeAlertsTrend: codeAlertsTrend
-        };
+        }
     }
     catch (err) {
-        consoleLog('error in calling the advec api: ' + err);
+        consoleLog('error in calling the advec api: ' + err)
         return {
             secretAlertsTrend: [],
             dependencyAlertsTrend: [],
@@ -384,99 +405,103 @@ async function getProjects(VSS, Service, CoreRestClient) {
 
 const batchTimeOut = 1000
 const repoBatchSize = 50
-async function loadAllAlertsFromAllRepos(VSS, Service, GitWebApi, organization, projects, progressDiv) {
-    consoleLog(`Loading all alerts from all repos for organization [${organization}] for [${projects.length}] projects`);
+async function loadAllAlertsFromAllRepos(VSS, Service, GitWebApi, organization, projects, progressDiv, redrawChartsCallback) {
+    consoleLog(`Loading all alerts from all repos for organization [${organization}] for [${projects.length}] projects`)
     // prepare the list of project calls to make
     for (let index in projects) {
-        const project = projects[index];
+        const project = projects[index]
         //$queryinfocontainer.append(`<li id="${project.id}">${project.name}</li>\n`);
 
         // place the repo definition in the array to process later
-        getProjectCalls.push({organization, project});
+        getProjectCalls.push({organization, project})
     }
     progressDiv.projectCount.textContent = `${projects.length}`
 
     // wait for all the project promises to complete
-    console.log(`Waiting for [${getProjectCalls.length}] calls to complete`);
-    let position = 0;
-    let waiting = 0;
-    let alertBatchSize = repoBatchSize; // size of the calls to run at once
-    activeCalls = 0; // reset the active calls counter
+    console.log(`Waiting for [${getProjectCalls.length}] calls to complete`)
+    let position = 0
+    let waiting = 0
+    let alertBatchSize = repoBatchSize // size of the calls to run at once
+    activeCalls = 0 // reset the active calls counter
     let i = 0
     while (i < getProjectCalls.length) {
         if (activeCalls < alertBatchSize) {
-            let work = getProjectCalls[i];
+            let work = getProjectCalls[i]
 
             // do the work, don't wait for it to complete to speed things up
             getRepos(VSS, Service, GitWebApi, work.project.name, false).then(repos => {
-                activeCalls--;
+                activeCalls--
                 showRepoInfo(repos, work.project, work.organization, progressDiv, activeCalls)
             }).
             catch(error => {
-                console.error(`Error handling get repos for ${work.project.name}: ${error}`);
-                activeCalls--;
+                console.error(`Error handling get repos for ${work.project.name}: ${error}`)
+                activeCalls--
             })
 
-            activeCalls++;
+            activeCalls++
             i++
         }
         else {
             showCallStatus();
             // wait for the next batch to complete
-            await new Promise(resolve => setTimeout(resolve, batchTimeOut));
+            await new Promise(resolve => setTimeout(resolve, batchTimeOut))
         }
     }
 
     while (activeCalls > 0) {
         // wait for the last batch to complete
-        console.log(`Waiting for the last [${activeCalls}] project calls to complete`);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log(`Waiting for the last [${activeCalls}] project calls to complete`)
+        await new Promise(resolve => setTimeout(resolve, 500))
     }
-    console.log(`All project calls completed`);
-    showCallStatus();
+    console.log(`All project calls completed`)
+    showCallStatus()
 
     // loop over the alertCall array and load the alerts for each repo
-    position = 0;
-    waiting = 0;
-    alertBatchSize = 50; // size of the calls to run at once
-    activeCalls = 0;
+    position = 0
+    waiting = 0
+    alertBatchSize = 50 // size of the calls to run at once
+    activeCalls = 0
     i = 0
     const repos = null // required param, but not used
     while (i < getAlertCalls.length) {
         if (activeCalls < alertBatchSize) {
-            let work = getAlertCalls[i];
+            let work = getAlertCalls[i]
             // do the work
             getAlerts(work.organization, work.project.name, work.repo.id, repos, work.project, work.repo).then(repoAlerts => {
-                activeCalls--;
+                activeCalls--
                 showAlertInfo(work.organization, work.project, work.repo, repoAlerts, progressDiv, activeCalls)
                 //todo: store the overall results: results.push(repoAlerts);
             }).
             catch(error => {
-                console.error(`Error handling get alerts for ${work.repo.name}: ${error}`);
-                activeCalls--;
+                console.error(`Error handling get alerts for ${work.repo.name}: ${error}`)
+                activeCalls--
             })
 
-            activeCalls++;
+            activeCalls++
             i++
         }
         else
         {
-            showCallStatus();
+            showCallStatus()
             // wait some time before starting the next batch
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 500))
         }
     }
 
     while (activeCalls > 0) {
         // wait for the last batch to complete
-        console.log(`Waiting for the last [${activeCalls}] alert calls to complete`);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log(`Waiting for the last [${activeCalls}] alert calls to complete`)
+        await new Promise(resolve => setTimeout(resolve, 500))
     }
 
     // now all the alerts have been loaded, so we can show the results
-    var header = document.querySelector('.loadingTitle');
+    var header = document.querySelector('.loadingTitle')
     // Add the loading class to the header
-    header.classList.remove('loading');
+    header.classList.remove('loading')
+
+    if (redrawChartsCallback) {
+        redrawChartsCallback()
+    }
 }
 async function showRepoInfo(repos, project, organization, progressDiv, activeCalls) {
     const repoCount = repos?.length
@@ -542,7 +567,11 @@ function showCallStatus() {
         }
         const durationText = `${durationMinutesText}:${durationSecondsText}`
 
-        debugInfo.textContent = `Call counter: ${callCounter} | Active connections: ${activeCalls} | Duration: ${durationText}`
+        let dataSetInfo = ''
+        if (storedAlertData) {
+            dataSetInfo = ` | Total alerts: ${storedAlertData.count}`
+        }
+        debugInfo.textContent = `Call counter: ${callCounter} | Active connections: ${activeCalls} | Duration: ${durationText} ${dataSetInfo}`
     }
 }
 
@@ -648,39 +677,46 @@ async function getAlertSeverityCounts(organization, projectName, repoId, alertTy
         { severity: "high", count: 0 },
         { severity: "medium", count: 0},
         { severity: "low", count: 0}
-    ];
-    try {
-        // todo: filter on alertType
-        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=${apiVersion}`;
-        //consoleLog(`Calling url: [${url}]`);
-        const alertResult = await authenticatedGet(url);
+    ]
 
-        if (alertResult && alertResult.count) {
+    try {
+        let alertResult = { count: 0, value: null}
+        if (storedAlertData) {
+            alertResult.value = storedAlertData.value.filter(alert => alert.alertType === alertType.name)
+        }
+        else {
+            // todo: filter on alertType
+            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=${apiVersion}`
+            //consoleLog(`Calling url: [${url}]`);
+            alertResult = await authenticatedGet(url)
+        }
+
+        if (alertResult && alertResult.value.length) {
             //consoleLog('alertResult: ' + JSON.stringify(alertResult));
-            consoleLog(`total alertResult count: ${alertResult.count} for alertType [${alertType.name}]`);
+            consoleLog(`total alertResult count: ${alertResult.value.length} for alertType [${alertType.name}]`)
 
             // group the alerts based on the severity
             try {
-                consoleLog(`severityClasses.length: [${severityClasses.length}]`);
+                consoleLog(`severityClasses.length: [${severityClasses.length}]`)
 
                 for (let index in severityClasses) {
                     let severityClass = severityClasses[index];
-                    const severityAlertCount = alertResult.value.filter(alert => alert.severity === severityClass.severity);
-                    consoleLog(`severityClass [${severityClass.severity}] has [${severityAlertCount.length}] alerts`);
-                    severityClass.count = severityAlertCount.length;
-                };
+                    const severityAlertCount = alertResult.value.filter(alert => alert.severity === severityClass.severity)
+                    consoleLog(`severityClass [${severityClass.severity}] has [${severityAlertCount.length}] alerts`)
+                    severityClass.count = severityAlertCount.length
+                }
             }
             catch (err) {
-                consoleLog('error in grouping the alerts: ' + err);
+                consoleLog('error in grouping the alerts: ' + err)
             }
 
-            consoleLog('severityClasses summarized: ' + JSON.stringify(severityClasses));
+            consoleLog('severityClasses summarized: ' + JSON.stringify(severityClasses))
         }
     }
     catch (err) {
-        consoleLog('error in calling the advec api: ' + err);
+        consoleLog('error in calling the advec api: ' + err)
     }
-    return severityClasses;
+    return severityClasses
 }
 
 function dumpObject(obj, showMethods = false) {

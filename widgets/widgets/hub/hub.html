@@ -7,7 +7,7 @@
     <script src="hub.js"></script>
     <link rel="stylesheet" href="../../styles.css" />
 </head>
-<body>
+<body class="main">
     <script lang="">
         VSS.init({
                 explicitNotifyLoaded: true,
@@ -26,29 +26,43 @@
 
             // top level function
             async function (Service, WidgetHelpers, Services, context, GitWebApi, RestClient) {
-                consoleLog('VSS.require function');
-                try {
-                    consoleLog('VSS.register Hub function');
 
-                    const chartService = await Services.ChartsService.getService();
-                    const webContext = VSS.getWebContext();
-                    const project = webContext.project;
-                    const organization = webContext.account.name;
-                    const projectId = project.id;
+                async function redrawCharts() {
+                    consoleLog('redrawCharts function')
+                    // create the charts with the full data set
+                    const webContext = VSS.getWebContext()
+                    const project = webContext.project
+                    const organization = webContext.account.name
+                    const projectId = project.id
                     // convert project.name to url encoding
-                    const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26");
+                    const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26")
+                    const chartService = await Services.ChartsService.getService()
 
-                    consoleLog('project id: ' + projectId);
-                    consoleLog('project name: ' + projectName);
-                    consoleLog('organization name: ' + organization);
+                    await createCharts({chartService, projectName, organization})
+                }
+                consoleLog('VSS.require function')
+                try {
+                    consoleLog('VSS.register Hub function')
+
+                    const chartService = await Services.ChartsService.getService()
+                    const webContext = VSS.getWebContext()
+                    const project = webContext.project
+                    const organization = webContext.account.name
+                    const projectId = project.id
+                    // convert project.name to url encoding
+                    const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26")
+
+                    consoleLog('project id: ' + projectId)
+                    consoleLog('project name: ' + projectName)
+                    consoleLog('organization name: ' + organization)
 
                     // Get the header element
-                    var header = document.querySelector('.loadingTitle');
+                    var header = document.querySelector('.loadingTitle')
                     // Add the loading class to the header
-                    header.classList.add('loading');
+                    header.classList.add('loading')
 
                     // load all project data
-                    const progressDivContainer = $('#LoadingInfoContainer')[0];
+                    const progressDivContainer = $('#LoadingInfoContainer')[0]
                     const progressDiv = {
                         projectCount: $(progressDivContainer).find('.projectCount')[0],
                         repoCount: $(progressDivContainer).find('.repoCount')[0],
@@ -56,29 +70,29 @@
                         secretAlertCount: $(progressDivContainer).find('.secretAlertCount')[0],
                         codeAlertCount: $(progressDivContainer).find('.codeAlertCount')[0]
                     }
-                    const projects = await getProjects(VSS, Service, RestClient);
-                    consoleLog(`Found [${projects?.length}] projects`);
-                    loadAllAlertsFromAllRepos(VSS, Service, GitWebApi, organization, projects, progressDiv)
+                    const projects = await getProjects(VSS, Service, RestClient)
+                    consoleLog(`Found [${projects?.length}] projects`)
+                    loadAllAlertsFromAllRepos(VSS, Service, GitWebApi, organization, projects, progressDiv, redrawCharts)
 
-                    // create the charts
-                    const titleElement = $('h2.ghazdoTitle')[0];
-                    const containerElement = $('#Chart-Container')[0];
-                    await createCharts({chartService, containerElement, titleElement, projectName, organization});
+                    // create the empty charts
+                    await createCharts({chartService, projectName, organization})
 
-                    consoleLog('returning WidgetStatusHelper.Success()');
+                    consoleLog('returning WidgetStatusHelper.Success()')
                 }
                 catch (err) {
-                    consoleLog(`Error loading the page contents: ${JSON.stringify(err)}`);
+                    consoleLog(`Error loading the page contents: ${JSON.stringify(err)}`)
                 }
-                VSS.notifyLoadSucceeded();
+                VSS.notifyLoadSucceeded()
             }
         );
     </script>
 
     <div class="widget" id="progressDivContainer">
-        <h2 class="loadingTitle2">Loading information</h2>
         <div>
-            <div class="loadingTitle float"></div>
+            <div class="float" style="font-weight:600;font-size:larger;margin-right:7px;">Loading data</div>
+            <div class="loadingTitle float float-break"></div>
+        </div>
+        <div>
             <div id="debugInfo" class="float float-break" date-startTime=""></div>
         </div>
         <div id="LoadingInfoContainer" class="column-container">
@@ -109,12 +123,26 @@
         </div>
     </div>
 
-    <div class="widget">
-        <h2 class="ghazdoTitle">GHAzDo Hub test from Rob Bos's widget</h2>
-        <div id="Chart-Container"></div>
+    <div class="widget float">
+        <h2 class="ghazdoTitle" id="TitleOverallTrend">Overall alert trend</h2>
+        <div id="ChartContainerOverallTrend"></div>
+    </div>
+
+    <div class="widget float">
+        <h2 class="ghazdoTitle" id="TitleOverallDependencyPie">Overall dependencies alert levels</h2>
+        <div id="ChartContainerOverallDependencyPie"></div>
+    </div>
+
+    <div class="widget float">
+        <h2 class="ghazdoTitle" id="TitleOverallCodeScanningPie">Overall code scanning alert levels</h2>
+        <div id="ChartContainerOverallCodeScanningPie"></div>
     </div>
 
     <style>
+        .main {
+            overflow: scroll;
+        }
+
         .widget {
             width: 320px;
             border: solid 1px silver;
