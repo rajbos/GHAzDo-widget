@@ -187,7 +187,7 @@ async function storeAlerts(repoId, alertResult) {
     }
 }
 
-async function getAlertsTrendLines(organization, projectName, repoId) {
+async function getAlertsTrendLines(organization, projectName, repoId, daysToGoBack, summaryBucket) {
     consoleLog(`getAlertsTrend for organization [${organization}], project [${projectName}], repo [${repoId}]`)
     try {
         alertResult = null
@@ -203,19 +203,29 @@ async function getAlertsTrendLines(organization, projectName, repoId) {
             alertResult = await authenticatedGet(url)
             //consoleLog('alertResult: ' + JSON.stringify(alertResult))
         }
-        consoleLog('alertResult count: ' + alertResult.count)
+        if (alertResult) {
+            consoleLog('alertResult count: ' + alertResult.count)
+        }
+        else {
+            consoleLog('alertResult is null')
+            return {
+                secretAlertsTrend: [],
+                dependencyAlertsTrend: [],
+                codeAlertsTrend: []
+            }
+        }
 
         // load the Secret alerts and create a trend line over the last 3 weeks
         const secretAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.SECRET.name)
-        const secretAlertsTrend = getAlertsTrendLine(secretAlerts, 'secret')
+        const secretAlertsTrend = getAlertsTrendLine(secretAlerts, AlertType.SECRET.name, daysToGoBack, summaryBucket)
         consoleLog('')
         // load the Dependency alerts and create a trend line over the last 3 weeks
         const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name)
-        const dependencyAlertsTrend = getAlertsTrendLine(dependencyAlerts, 'dependency')
+        const dependencyAlertsTrend = getAlertsTrendLine(dependencyAlerts, AlertType.DEPENDENCY.name, daysToGoBack, summaryBucket)
         consoleLog('')
         // load the Code alerts and create a trend line over the last 3 weeks
         const codeAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.CODE.name)
-        const codeAlertsTrend = getAlertsTrendLine(codeAlerts, 'code')
+        const codeAlertsTrend = getAlertsTrendLine(codeAlerts, AlertType.CODE.name, daysToGoBack, summaryBucket)
 
         return {
                 secretAlertsTrend: secretAlertsTrend,
