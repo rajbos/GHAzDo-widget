@@ -187,7 +187,7 @@ async function storeAlerts(repoId, alertResult) {
     }
 }
 
-async function getAlertsTrendLines(organization, projectName, repoId, alertType = 0, showClosed = false) {
+async function getAlertsTrendLines(organization, projectName, repoId, daysToGoBack, summaryBucket, alertType = 0, showClosed = false) {
     consoleLog(`getAlertsTrend for organization [${organization}], project [${projectName}], repo [${repoId}]`)
     try {
         alertResult = null
@@ -203,20 +203,29 @@ async function getAlertsTrendLines(organization, projectName, repoId, alertType 
             alertResult = await authenticatedGet(url)
             //consoleLog('alertResult: ' + JSON.stringify(alertResult))
         }
-        consoleLog('alertResult count: ' + alertResult.count)
-
+        if (alertResult) {
+            consoleLog('alertResult count: ' + alertResult.count)
+        }
+        else {
+            consoleLog('alertResult is null')
+            return {
+                secretAlertsTrend: [],
+                dependencyAlertsTrend: [],
+                codeAlertsTrend: []
+            }
+        }
         if (alertType === 0) {
             // load the Secret alerts and create a trend line over the last 3 weeks
             const secretAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.SECRET.name)
-            const secretAlertsTrend = getAlertsTrendLine(secretAlerts, AlertType.SECRET.name)
+            const secretAlertsTrend = getAlertsTrendLine(secretAlerts, AlertType.SECRET.name, daysToGoBack, summaryBucket)
             consoleLog('')
             // load the Dependency alerts and create a trend line over the last 3 weeks
             const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name)
-            const dependencyAlertsTrend = getAlertsTrendLine(dependencyAlerts, AlertType.DEPENDENCY.name)
+            const dependencyAlertsTrend = getAlertsTrendLine(dependencyAlerts, AlertType.DEPENDENCY.name, daysToGoBack, summaryBucket)
             consoleLog('')
             // load the Code alerts and create a trend line over the last 3 weeks
             const codeAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.CODE.name)
-            const codeAlertsTrend = getAlertsTrendLine(codeAlerts, AlertType.CODE.name)
+            const codeAlertsTrend = getAlertsTrendLine(codeAlerts, AlertType.CODE.name, daysToGoBack, summaryBucket)
 
             return {
                     secretAlertsTrend: secretAlertsTrend,
@@ -294,16 +303,16 @@ function checkAlertFixedOnDate(alert, dateStr) {
     return false;
 }
 
-function getAlertsTrendLine(alerts, type, filter = null) {
+function getAlertsTrendLine(alerts, type, daysToGoBack = 21, summaryBucket = 1) {
     consoleLog(`getAlertsTrendLine for type ${type}`);
 
     const trendLine = [];
     const trendLineSimple = [];
     const today = new Date();
-    const threeWeeksAgo = new Date();
-    threeWeeksAgo.setDate(today.getDate() - 21);
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - daysToGoBack);
 
-    for (let d = threeWeeksAgo; d <= today; d.setDate(d.getDate() + 1)) {
+    for (let d = startDate; d <= today; d.setDate(d.getDate() + summaryBucket)) {
         const date = new Date(d);
         const dateStr = date.toISOString().split('T')[0];
         let alertsOnDate = []
@@ -335,13 +344,13 @@ function getAlertsTrendLine(alerts, type, filter = null) {
     return trendLineSimple;
 }
 
-function getDatePoints() {
+function getDatePoints(daysToGoBack = 21, summaryBucket = 1) {
     const trendDates = [];
     const today = new Date();
-    const threeWeeksAgo = new Date();
-    threeWeeksAgo.setDate(today.getDate() - 21);
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - daysToGoBack);
 
-    for (let d = threeWeeksAgo; d <= today; d.setDate(d.getDate() + 1)) {
+    for (let d = startDate; d <= today; d.setDate(d.getDate() + summaryBucket)) {
         const date = new Date(d);
         const dateStr = date.toISOString().split('T')[0];
         trendDates.push(dateStr);

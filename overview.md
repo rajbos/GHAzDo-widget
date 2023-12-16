@@ -12,6 +12,10 @@ Install from the marketplace: https://marketplace.visualstudio.com/items?itemNam
 
 > Note: only project level dashboards are supported at the moment.
 
+## Dashboard
+This extension also adds a dashboard to the menu that shows the overall status of the entire project. All alerts from all repositories are loaded and shown in a single dashboard.  
+![Screenshot of the hub in action](/img/hub.png)  
+
 ## Pipeline tasks
 * Advanced-Security-Review: lets you check the pull request for newly introduced alerts from Dependency Scanning or Code Scanning (configurable). If new alerts are introduced, the task will fail. 
 > Note: 

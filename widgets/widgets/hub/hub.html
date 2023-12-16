@@ -35,10 +35,18 @@
                     const organization = webContext.account.name
                     const projectId = project.id
                     // convert project.name to url encoding
-                    const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26")
                     const chartService = await Services.ChartsService.getService()
 
-                    await createCharts({chartService, projectName, organization})
+                    await createCharts({chartService, projectName: project.name, organization})
+
+                    const debugging = document.getElementById('debugInfoCheckbox')
+                    // wait at least 5 seconds before hiding the progress div
+                    setTimeout(() => {
+                        if (!debugging.checked) {
+                            const progressDivContainer = document.getElementById('progressDivContainer')
+                            progressDivContainer.style.display = 'none'
+                        }
+                    }, 5000)
                 }
                 consoleLog('VSS.require function')
                 try {
@@ -49,11 +57,8 @@
                     const project = webContext.project
                     const organization = webContext.account.name
                     const projectId = project.id
-                    // convert project.name to url encoding
-                    const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26")
 
                     consoleLog('project id: ' + projectId)
-                    consoleLog('project name: ' + projectName)
                     consoleLog('organization name: ' + organization)
 
                     // Get the header element
@@ -71,11 +76,13 @@
                         codeAlertCount: $(progressDivContainer).find('.codeAlertCount')[0]
                     }
                     const projects = await getProjects(VSS, Service, RestClient)
+                    // filter the projects to only the current project
+                    const currentProject = projects.filter(p => p.id === projectId)
                     consoleLog(`Found [${projects?.length}] projects`)
-                    loadAllAlertsFromAllRepos(VSS, Service, GitWebApi, organization, projects, progressDiv, redrawCharts)
+                    loadAllAlertsFromAllRepos(VSS, Service, GitWebApi, organization, currentProject, progressDiv, redrawCharts)
 
                     // create the empty charts
-                    await createCharts({chartService, projectName, organization})
+                    await createCharts({chartService, projectName: project.name, organization})
 
                     consoleLog('returning WidgetStatusHelper.Success()')
                 }
@@ -90,7 +97,11 @@
     <div class="widget" id="progressDivContainer">
         <div>
             <div class="float" style="font-weight:600;font-size:larger;margin-right:7px;">Loading data</div>
-            <div class="loadingTitle float float-break"></div>
+            <div class="loadingTitle float margin-right:7px;"></div>
+            <div class="float float-break" style="margin-right:7px;">
+                <input type="checkbox" id="debugInfoCheckbox" name="debugInfoCheckbox" value="debugInfoCheckbox" unchecked>
+                <label for="debugInfoCheckbox">Show debugging</label>
+            </div>
         </div>
         <div>
             <div id="debugInfo" class="float float-break" date-startTime=""></div>
@@ -123,10 +134,12 @@
         </div>
     </div>
 
-    <div class="widget float">
+    <div class="widget trendlineWidget float float-break">
         <h2 class="ghazdoTitle" id="TitleOverallTrend">Overall alert trend</h2>
         <div id="ChartContainerOverallTrend"></div>
     </div>
+
+    <div style="clear: both;"></div>
 
     <div class="widget float">
         <h2 class="ghazdoTitle" id="TitleOverallDependencyPie">Overall dependencies alert levels</h2>
@@ -151,12 +164,16 @@
             padding: 5px 5px 5px 5px;
         }
 
+        .trendlineWidget {
+            width: 650px;
+        }
+
         .region-headerBreadcrumb {
            display: none;
         }
 
         #progressDivContainer {
-            width: 435px;
+            width: 440px;
         }
 
         .float {

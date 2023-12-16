@@ -1,6 +1,6 @@
-async function createChart($container, chartService, alertTrendLines, widgetSize) {
+async function createChart($container, chartService, alertTrendLines, widgetSize, daysToGoBack = 21, summaryBucket = 1) {
 
-    const datePoints = getDatePoints();
+    const datePoints = getDatePoints(daysToGoBack, summaryBucket);
     var chartOptions = {
         "hostOptions": {
             "height": "290",
@@ -153,16 +153,16 @@ async function renderPieChart(organization, projectName, repoId, $container, cha
     }
 }
 
-async function renderTrendLine(organization, projectName, repoId, $container, chartService, widgetSize) {
-    consoleLog('renderTrendLine')
+async function renderTrendLine(organization, projectName, repoId, $container, chartService, widgetSize, daysToGoBack = 21, summaryBucket = 1) {
+    consoleLog('renderTrendLine');
     try {
         // get the trend data for alerts first
-        const alertTrendLines = await getAlertsTrendLines(organization, projectName, repoId)
-        consoleLog('Dependencies AlertTrend: ' +  JSON.stringify(alertTrendLines.dependencyAlertsTrend))
-        consoleLog('Code scanning AlertTrend: ' +  JSON.stringify(alertTrendLines.codeAlertsTrend))
-        consoleLog('Secrets AlertTrend: ' +  JSON.stringify(alertTrendLines.secretAlertsTrend))
+        const alertTrendLines = await getAlertsTrendLines(organization, projectName, repoId, daysToGoBack, summaryBucket)
+        consoleLog('Dependencies AlertTrend: ' +  JSON.stringify(alertTrendLines.dependencyAlertsTrend));
+        consoleLog('Code scanning AlertTrend: ' +  JSON.stringify(alertTrendLines.codeAlertsTrend));
+        consoleLog('Secrets AlertTrend: ' +  JSON.stringify(alertTrendLines.secretAlertsTrend));
 
-        createChart($container, chartService, alertTrendLines, widgetSize)
+        createChart($container, chartService, alertTrendLines, widgetSize, daysToGoBack, summaryBucket);
     }
     catch (err) {
         consoleLog(`Error loading the alerts trend: ${err}`)
