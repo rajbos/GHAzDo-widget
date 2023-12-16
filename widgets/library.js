@@ -120,6 +120,7 @@ async function getAlerts(organization, projectName, repoId, repos, project, repo
     }
 }
 
+let storedAlertData = null
 async function getAlertsForRepo(organization, projectName, repoId, project, repo) {
     //consoleLog('getAlerts');
     let values = {
@@ -162,6 +163,8 @@ async function getAlertsForRepo(organization, projectName, repoId, project, repo
                     values.secretAlerts = secretAlerts.length;
                     values.codeAlerts = codeAlerts.length;
 
+                    await storeAlerts(repoId, alertResult)
+
                     return ({organization, project, repo, values});
                 }
             //});
@@ -174,36 +177,54 @@ async function getAlertsForRepo(organization, projectName, repoId, project, repo
     return (organization, project, repo, values);
 }
 
-async function getAlertsTrendLines(organization, projectName, repoId) {
-    consoleLog(`getAlertsTrend for organization [${organization}], project [${projectName}], repo [${repoId}]`);
+async function storeAlerts(repoId, alertResult) {
+    if (!storedAlertData) {
+        storedAlertData = alertResult;
+    }
+    else {
+        storedAlertData.value = storedAlertData.value.concat(alertResult.value);
+        storedAlertData.count += alertResult.count;
+    }
+}
 
+async function getAlertsTrendLines(organization, projectName, repoId) {
+    consoleLog(`getAlertsTrend for organization [${organization}], project [${projectName}], repo [${repoId}]`)
     try {
-        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&api-version=${apiVersion}`;
-        consoleLog(`Calling url: [${url}]`);
-        const alertResult = await authenticatedGet(url);
-        //consoleLog('alertResult: ' + JSON.stringify(alertResult));
-        consoleLog('alertResult count: ' + alertResult.count);
+        alertResult = null
+        if (repoId === '-1') {
+            // load data from previously stored info
+            consoleLog('loading data from previously stored info')
+            alertResult = storedAlertData
+        }
+        else {
+            // load the alerts for the given repo
+            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&api-version=${apiVersion}`
+            consoleLog(`Calling url: [${url}]`)
+            alertResult = await authenticatedGet(url)
+            //consoleLog('alertResult: ' + JSON.stringify(alertResult))
+        }
+        consoleLog('alertResult count: ' + alertResult.count)
 
         // load the Secret alerts and create a trend line over the last 3 weeks
-        const secretAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.SECRET.name);
-        const secretAlertsTrend = getAlertsTrendLine(secretAlerts, 'secret');
-        console.log('');
+        const secretAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.SECRET.name)
+        const secretAlertsTrend = getAlertsTrendLine(secretAlerts, 'secret')
+        consoleLog('')
         // load the Dependency alerts and create a trend line over the last 3 weeks
-        const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name);
-        const dependencyAlertsTrend = getAlertsTrendLine(dependencyAlerts, 'dependency');
-        console.log('');
+        const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name)
+        const dependencyAlertsTrend = getAlertsTrendLine(dependencyAlerts, 'dependency')
+        consoleLog('')
         // load the Code alerts and create a trend line over the last 3 weeks
-        const codeAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.CODE.name);
-        const codeAlertsTrend = getAlertsTrendLine(codeAlerts, 'code');
+        const codeAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.CODE.name)
+        const codeAlertsTrend = getAlertsTrendLine(codeAlerts, 'code')
 
         return {
                 secretAlertsTrend: secretAlertsTrend,
                 dependencyAlertsTrend: dependencyAlertsTrend,
                 codeAlertsTrend: codeAlertsTrend
-        };
+        }
     }
     catch (err) {
-        consoleLog('error in calling the advec api: ' + err);
+        consoleLog('error in calling the advec api: ' + err)
         return {
             secretAlertsTrend: [],
             dependencyAlertsTrend: [],
@@ -361,6 +382,10 @@ async function getProjects(VSS, Service, CoreRestClient) {
                 id: project.id
             }
         });
+
+        // sort the projects based on the name
+        projects.sort((a, b) => (a.name > b.name) ? 1 : -1);
+
         //consoleLog(`Converted projects to: ${JSON.stringify(projects)}`);
 
         // save the repos to the document store for next time
@@ -378,51 +403,244 @@ async function getProjects(VSS, Service, CoreRestClient) {
     }
 }
 
+const batchTimeOut = 1000
+const repoBatchSize = 50
+async function loadAllAlertsFromAllRepos(VSS, Service, GitWebApi, organization, projects, progressDiv, redrawChartsCallback) {
+    consoleLog(`Loading all alerts from all repos for organization [${organization}] for [${projects.length}] projects`)
+    // prepare the list of project calls to make
+    for (let index in projects) {
+        const project = projects[index]
+        //$queryinfocontainer.append(`<li id="${project.id}">${project.name}</li>\n`);
+
+        // place the repo definition in the array to process later
+        getProjectCalls.push({organization, project})
+    }
+    progressDiv.projectCount.textContent = `${projects.length}`
+
+    // wait for all the project promises to complete
+    console.log(`Waiting for [${getProjectCalls.length}] calls to complete`)
+    let position = 0
+    let waiting = 0
+    let alertBatchSize = repoBatchSize // size of the calls to run at once
+    activeCalls = 0 // reset the active calls counter
+    let i = 0
+    while (i < getProjectCalls.length) {
+        if (activeCalls < alertBatchSize) {
+            let work = getProjectCalls[i]
+
+            // do the work, don't wait for it to complete to speed things up
+            getRepos(VSS, Service, GitWebApi, work.project.name, false).then(repos => {
+                activeCalls--
+                showRepoInfo(repos, work.project, work.organization, progressDiv, activeCalls)
+            }).
+            catch(error => {
+                console.error(`Error handling get repos for ${work.project.name}: ${error}`)
+                activeCalls--
+            })
+
+            activeCalls++
+            i++
+        }
+        else {
+            showCallStatus();
+            // wait for the next batch to complete
+            await new Promise(resolve => setTimeout(resolve, batchTimeOut))
+        }
+    }
+
+    while (activeCalls > 0) {
+        // wait for the last batch to complete
+        console.log(`Waiting for the last [${activeCalls}] project calls to complete`)
+        await new Promise(resolve => setTimeout(resolve, 500))
+    }
+    console.log(`All project calls completed`)
+    showCallStatus()
+
+    // loop over the alertCall array and load the alerts for each repo
+    position = 0
+    waiting = 0
+    alertBatchSize = 50 // size of the calls to run at once
+    activeCalls = 0
+    i = 0
+    const repos = null // required param, but not used
+    while (i < getAlertCalls.length) {
+        if (activeCalls < alertBatchSize) {
+            let work = getAlertCalls[i]
+            // do the work
+            getAlerts(work.organization, work.project.name, work.repo.id, repos, work.project, work.repo).then(repoAlerts => {
+                activeCalls--
+                showAlertInfo(work.organization, work.project, work.repo, repoAlerts, progressDiv, activeCalls)
+                //todo: store the overall results: results.push(repoAlerts);
+            }).
+            catch(error => {
+                console.error(`Error handling get alerts for ${work.repo.name}: ${error}`)
+                activeCalls--
+            })
+
+            activeCalls++
+            i++
+        }
+        else
+        {
+            showCallStatus()
+            // wait some time before starting the next batch
+            await new Promise(resolve => setTimeout(resolve, 500))
+        }
+    }
+
+    while (activeCalls > 0) {
+        // wait for the last batch to complete
+        console.log(`Waiting for the last [${activeCalls}] alert calls to complete`)
+        await new Promise(resolve => setTimeout(resolve, 500))
+    }
+
+    // now all the alerts have been loaded, so we can show the results
+    var header = document.querySelector('.loadingTitle')
+    // Add the loading class to the header
+    header.classList.remove('loading')
+
+    if (redrawChartsCallback) {
+        redrawChartsCallback()
+    }
+}
+async function showRepoInfo(repos, project, organization, progressDiv, activeCalls) {
+    const repoCount = repos?.length
+    consoleLog(`Found [${repoCount}] repos for project [${project.name}] to load alerts for`);
+
+    if (isNaN(repoCount)) {
+        // prevent issues with the count (would result in NaN)
+        return
+    }
+
+    var currentValue = parseInt(progressDiv.repoCount.textContent);
+    progressDiv.repoCount.textContent = currentValue + repoCount
+
+    // load the work to load the alerts for all repos
+    for (let repoIndex in repos) {
+        const repo = repos[repoIndex];
+        // only load the alerts if the repo has a size, otherwise it is still an empty repo
+        if (repo.size > 0) {
+            // add work definition to array
+            getAlertCalls.push({organization, project, repo});
+        }
+    }
+}
+
+let debugInfo = null
+function showCallStatus() {
+    if (!debugInfo) {
+        debugInfo = document.querySelector('#debugInfo')
+        if (debugInfo) {
+            // add start time to the debug info objects data-property
+            debugInfo.dataset.startTime = new Date()
+        }
+    }
+
+    if (debugInfo) {
+        // calculate the duration
+        const startDateTime = new Date(debugInfo.dataset.startTime)
+        const endDateTime = new Date()
+        const duration = endDateTime - startDateTime
+        let seconds = 0
+        if (duration < 60000) {
+            seconds = Math.round(duration / 1000)
+        }
+        else {
+            seconds = Math.round((duration % 60000) / 1000)
+        }
+
+        let durationSecondsText = ''
+        if (seconds < 10) {
+            durationSecondsText = `0${seconds}`
+        }
+        else {
+            durationSecondsText = `${seconds}`
+        }
+
+        const durationMinutes = Math.round(duration / 60000)
+        let durationMinutesText = ''
+        if (durationMinutes < 10) {
+            durationMinutesText = `0${durationMinutes}`
+        }
+        else {
+            durationMinutesText = `${durationMinutes}`
+        }
+        const durationText = `${durationMinutesText}:${durationSecondsText}`
+
+        let dataSetInfo = ''
+        if (storedAlertData) {
+            dataSetInfo = ` | Total alerts: ${storedAlertData.count}`
+        }
+        debugInfo.textContent = `Call counter: ${callCounter} | Active connections: ${activeCalls} | Duration: ${durationText} ${dataSetInfo}`
+    }
+}
+
+function showAlertInfo(organization, project, repo, repoAlerts, progressDiv, activeCalls) {
+    if (repoAlerts && repoAlerts.values) {
+        //consoleLog(`Found [${JSON.stringify(repoAlerts)}] dependency alerts for repo [${repo.name}]`)
+
+        // show the alert counts
+        // todo: store the current count and skip the parsing
+        var currentValue = parseInt(progressDiv.dependencyAlertCount.textContent)
+        progressDiv.dependencyAlertCount.textContent =  currentValue + repoAlerts.values.dependencyAlerts
+
+        var currentValue = parseInt(progressDiv.secretAlertCount.textContent)
+        progressDiv.secretAlertCount.textContent = currentValue + repoAlerts.values.secretAlerts
+
+        var currentValue = parseInt(progressDiv.codeAlertCount.textContent)
+        progressDiv.codeAlertCount.textContent = currentValue + repoAlerts.values.codeAlerts
+
+        // keep track of global state:
+        // endDateTime.text('End: ' + (new Date()).toISOString())
+        showCallStatus()
+    }
+}
+
 async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
 
-    //consoleLog(`inside getRepos`);
-    const webContext = VSS.getWebContext();
-    const project = webContext.project;
-    let projectNameForSearch = projectName ? projectName : project.name;
-    //consoleLog($`Searching for repos in project with name [${projectNameForSearch}]`);
+    //consoleLog(`inside getRepos`)
+    const webContext = VSS.getWebContext()
+    const project = webContext.project
+    let projectNameForSearch = projectName ? projectName : project.name
+    //consoleLog($`Searching for repos in project with name [${projectNameForSearch}]`)
 
-    const documentCollection = `repos`;
-    const documentId = `repositoryList-${projectNameForSearch}`;
+    const documentCollection = `repos`
+    const documentId = `repositoryList-${projectNameForSearch}`
 
     // needed to clean up
-    //removeDocument(VSS, documentCollection, documentId);
+    //removeDocument(VSS, documentCollection, documentId)
 
     if (useCache) {
         try {
-            const document = await getSavedDocument(VSS, documentCollection, documentId);
-            consoleLog(`document inside getRepos: ${JSON.stringify(document)}`);
+            const document = await getSavedDocument(VSS, documentCollection, documentId)
+            consoleLog(`document inside getRepos: ${JSON.stringify(document)}`)
             if (document || document?.data?.length > 0) {
-                consoleLog(`Loaded repos from document store. Last updated [${document.lastUpdated}]`);
+                consoleLog(`Loaded repos from document store. Last updated [${document.lastUpdated}]`)
                 // get the data type of lastUpdated
                 consoleLog(`typeof document.lastUpdated: ${typeof document.lastUpdated}`)
                 // if data.lastUpdated is older then 1 hour, then refresh the repos
-                const diff = new Date() - new Date(document.lastUpdated);
-                const diffHours = Math.floor(diff / 1000 / 60 / 60);
-                const cacheDuration = 4;
+                const diff = new Date() - new Date(document.lastUpdated)
+                const diffHours = Math.floor(diff / 1000 / 60 / 60)
+                const cacheDuration = 4
                 if (diffHours < cacheDuration) {
-                    consoleLog(`Repos are less then ${cacheDuration} hour old, so using the cached version. diffHours [${diffHours}]`);
-                    return document.data;
+                    consoleLog(`Repos are less then ${cacheDuration} hour old, so using the cached version. diffHours [${diffHours}]`)
+                    return document.data
                 }
                 else {
-                    consoleLog(`Repos are older then ${cacheDuration} hour, so refreshing the repo list is needed. diffHours [${diffHours}]`);
+                    consoleLog(`Repos are older then ${cacheDuration} hour, so refreshing the repo list is needed. diffHours [${diffHours}]`)
                 }
             }
         }
         catch (err) {
-            console.log(`Error loading the available repos from document store: ${err}`);
+            console.log(`Error loading the available repos from document store: ${err}`)
         }
     }
 
     //consoleLog(`Loading repositories from the API for project [${projectNameForSearch}]`);
     try {
-        const gitClient = Service.getClient(GitWebApi.GitHttpClient);
-        let repos = await gitClient.getRepositories(projectNameForSearch);
-        callCounter++;
+        const gitClient = Service.getClient(GitWebApi.GitHttpClient)
+        let repos = await gitClient.getRepositories(projectNameForSearch)
+        callCounter++
         //consoleLog(`Found these repos: ${JSON.stringify(repos)}`);
 
         // convert the repos to a simple list of names and ids:
@@ -432,23 +650,23 @@ async function getRepos(VSS, Service, GitWebApi, projectName, useCache = true) {
                 id: repo.id,
                 size: repo.size,
             }
-        });
-        //consoleLog(`Found [${repos.length}] repos`);
+        })
+        //consoleLog(`Found [${repos.length}] repos`)
 
         if (useCache) {
             // save the repos to the document store for next time
             try {
-                await saveDocument(VSS, documentCollection, documentId, repos);
+                await saveDocument(VSS, documentCollection, documentId, repos)
             }
             catch (err) {
-                console.log(`Error saving the available repos to document store: ${JSON.stringify(err)}`);
+                console.log(`Error saving the available repos to document store: ${JSON.stringify(err)}`)
             }
         }
-        return repos;
+        return repos
     }
     catch (err) {
-        console.log(`Error loading the available repos: ${err}`);
-        return null;
+        console.log(`Error loading the available repos: ${err}`)
+        return null
     }
 }
 
@@ -459,36 +677,46 @@ async function getAlertSeverityCounts(organization, projectName, repoId, alertTy
         { severity: "high", count: 0 },
         { severity: "medium", count: 0},
         { severity: "low", count: 0}
-    ];
+    ]
+
     try {
-        // todo: filter on alertType
-        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=${apiVersion}`;
-        //consoleLog(`Calling url: [${url}]`);
-        const alertResult = await authenticatedGet(url);
-        //consoleLog('alertResult: ' + JSON.stringify(alertResult));
-        consoleLog(`total alertResult count: ${alertResult.count} for alertType [${alertType.name}]`);
-
-        // group the alerts based on the severity
-        try {
-            consoleLog(`severityClasses.length: [${severityClasses.length}]`);
-
-            for (let index in severityClasses) {
-                let severityClass = severityClasses[index];
-                const severityAlertCount = alertResult.value.filter(alert => alert.severity === severityClass.severity);
-                consoleLog(`severityClass [${severityClass.severity}] has [${severityAlertCount.length}] alerts`);
-                severityClass.count = severityAlertCount.length;
-            };
+        let alertResult = { count: 0, value: null}
+        if (storedAlertData) {
+            alertResult.value = storedAlertData.value.filter(alert => alert.alertType === alertType.name)
         }
-        catch (err) {
-            consoleLog('error in grouping the alerts: ' + err);
+        else {
+            // todo: filter on alertType
+            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=${apiVersion}`
+            //consoleLog(`Calling url: [${url}]`);
+            alertResult = await authenticatedGet(url)
         }
 
-        consoleLog('severityClasses summarized: ' + JSON.stringify(severityClasses));
+        if (alertResult && alertResult.value.length) {
+            //consoleLog('alertResult: ' + JSON.stringify(alertResult));
+            consoleLog(`total alertResult count: ${alertResult.value.length} for alertType [${alertType.name}]`)
+
+            // group the alerts based on the severity
+            try {
+                consoleLog(`severityClasses.length: [${severityClasses.length}]`)
+
+                for (let index in severityClasses) {
+                    let severityClass = severityClasses[index];
+                    const severityAlertCount = alertResult.value.filter(alert => alert.severity === severityClass.severity)
+                    consoleLog(`severityClass [${severityClass.severity}] has [${severityAlertCount.length}] alerts`)
+                    severityClass.count = severityAlertCount.length
+                }
+            }
+            catch (err) {
+                consoleLog('error in grouping the alerts: ' + err)
+            }
+
+            consoleLog('severityClasses summarized: ' + JSON.stringify(severityClasses))
+        }
     }
     catch (err) {
-        consoleLog('error in calling the advec api: ' + err);
+        consoleLog('error in calling the advec api: ' + err)
     }
-    return severityClasses;
+    return severityClasses
 }
 
 function dumpObject(obj, showMethods = false) {

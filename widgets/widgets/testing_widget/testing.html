@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <script type="text/javascript">
-            // declare global variables
-            ///var callCounter = 0;
-        </script>
-
         <script src="../../../lib/VSS.SDK.min.js"></script>
         <script src="../../library.js"></script>
         <script src="../widget_1x1/widget_1x1.js"></script>
@@ -98,29 +93,8 @@
                             const repo = repos[repoIndex];
                             // only load the alerts if the repo has a size, otherwise it is still an empty repo
                             if (repo.size > 0) {
-                            // call and let the promise handle the rest
-                            // getAlerts(organization, project.name, repo.id).then(
-                            //    repoAlerts => showAlertInfo(organization, project, repo, repoAlerts, $queryinfocontainer)
-                            // );
-
-                            // add work definition to array
-                            getAlertCalls.push({organization, project, repo});
-
-                            // wait .250 seconds between calls
-                            // setTimeout(() => { }, 250);
-                            // new Promise((resolve, reject) => {
-                            //     getAlerts(organization, project.name, repo.id)
-                            //         .then(repoAlerts => {
-                            //             resolve(repoAlerts);
-                            //         })
-                            //         .catch(error => {
-                            //             reject(error);
-                            //         });
-                            // }).then(repoAlerts => {
-                            //     showAlertInfo(organization, project, repo, repoAlerts, $queryinfocontainer);
-                            // }).catch(error => {
-                            //     console.error(error);
-                            // });
+                                // add work definition to array
+                                getAlertCalls.push({organization, project, repo});
                             }
                         }
 
@@ -268,8 +242,6 @@
 
                                     const projects = await getProjects(VSS, Service, RestClient);
                                     consoleLog(`Found [${projects?.length}] projects`);
-                                    // sort the projects based on the name
-                                    projects.sort((a, b) => (a.name > b.name) ? 1 : -1);
 
                                     showProjectInfo(VSS, Service, GitWebApi, organization, projects)
                                 }

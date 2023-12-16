@@ -4,9 +4,10 @@
     <script src="../../../lib/VSS.SDK.min.js"></script>
     <script src="../../library.js"></script>
     <script src="../chart/chart.js"></script>
+    <script src="hub.js"></script>
     <link rel="stylesheet" href="../../styles.css" />
 </head>
-<body>
+<body class="main">
     <script lang="">
         VSS.init({
                 explicitNotifyLoaded: true,
@@ -14,116 +15,134 @@
             });
 
         VSS.require([
+                    "VSS/Service",
                     "TFS/Dashboards/WidgetHelpers",
                     "Charts/Services",
                     "VSS/Context",
-                    "VSS/Authentication/Services"
+                    //"VSS/Authentication/Services",
+                    "TFS/VersionControl/GitRestClient",
+                    "TFS/Core/RestClient"
                 ],
-                async function (WidgetHelpers, Services, context) {
-                    consoleLog('VSS.require function');
-                    try {
-                        consoleLog('VSS.register Hub function');
 
-                        const chartService = await Services.ChartsService.getService();
-                        consoleLog("Starting to create chart");
-                        var $container = $('#Chart-Container');
-                        var $title = $('h2.ghazdo-title');
+            // top level function
+            async function (Service, WidgetHelpers, Services, context, GitWebApi, RestClient) {
 
-                        if (!chartService) {
-                            consoleLog("chartService is null");
-                        }
+                async function redrawCharts() {
+                    consoleLog('redrawCharts function')
+                    // create the charts with the full data set
+                    const webContext = VSS.getWebContext()
+                    const project = webContext.project
+                    const organization = webContext.account.name
+                    const projectId = project.id
+                    // convert project.name to url encoding
+                    const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26")
+                    const chartService = await Services.ChartsService.getService()
 
-                        const webContext = VSS.getWebContext();
-                        const project = webContext.project;
-                        const organization = webContext.account.name;
-                        const projectId = project.id;
-                        // convert project.name to url encoding
-                        const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26");
+                    await createCharts({chartService, projectName, organization})
+                }
+                consoleLog('VSS.require function')
+                try {
+                    consoleLog('VSS.register Hub function')
 
-                        consoleLog('project id: ' + projectId);
-                        consoleLog('project name: ' + projectName);
-                        consoleLog('organization name: ' + organization);
+                    const chartService = await Services.ChartsService.getService()
+                    const webContext = VSS.getWebContext()
+                    const project = webContext.project
+                    const organization = webContext.account.name
+                    const projectId = project.id
+                    // convert project.name to url encoding
+                    const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26")
 
-                        const data = {
-                            chartType: 1,
-                            alertType: 1,
-                            repo: "eShopOnWeb",
-                            repoId: "5e5195e1-1b44-4d4b-9310-5d33ee2c4d6c"
-                        }
+                    consoleLog('project id: ' + projectId)
+                    consoleLog('project name: ' + projectName)
+                    consoleLog('organization name: ' + organization)
 
-                        let repoName
-                        let repoId
-                        // init empty object first
-                        let alertTrendLines = {secretAlertTrend: [], dependencyAlertTrend: [], codeAlertsTrend: []};
-                        let chartType = 1;
-                        let alertTypeConfig = 1;
-                        if (data && data.chartType && data.chartType !== "") {
-                            chartType = data.chartType;
-                            consoleLog('loaded chartType from widgetSettings: ' + chartType);
-                        }
-                        else {
-                            consoleLog('chartType is not set, using default value: ' + chartType);
-                        }
+                    // Get the header element
+                    var header = document.querySelector('.loadingTitle')
+                    // Add the loading class to the header
+                    header.classList.add('loading')
 
-                        if (data && data.alertType) {
-                            alertTypeConfig = data.alertType;
-                            consoleLog('loaded alertType from widgetSettings: ' + alertTypeConfig);
-                        }
+                    // load all project data
+                    const progressDivContainer = $('#LoadingInfoContainer')[0]
+                    const progressDiv = {
+                        projectCount: $(progressDivContainer).find('.projectCount')[0],
+                        repoCount: $(progressDivContainer).find('.repoCount')[0],
+                        dependencyAlertCount: $(progressDivContainer).find('.dependencyAlertCount')[0],
+                        secretAlertCount: $(progressDivContainer).find('.secretAlertCount')[0],
+                        codeAlertCount: $(progressDivContainer).find('.codeAlertCount')[0]
+                    }
+                    const projects = await getProjects(VSS, Service, RestClient)
+                    consoleLog(`Found [${projects?.length}] projects`)
+                    loadAllAlertsFromAllRepos(VSS, Service, GitWebApi, organization, projects, progressDiv, redrawCharts)
 
-                        if (data && data.repo && data.repo !== "") {
-                            repoName = data.repo;
-                            repoId = data.repoId;
+                    // create the empty charts
+                    await createCharts({chartService, projectName, organization})
 
-                            $container.text(`${data.repo}`)
-
-                            const chartSize = {
-                                columnSpan: 2
-                            }
-
-                            switch (chartType) {
-                                case "2":
-                                    try {
-                                        const alertType = GetAlertTypeFromValue(alertTypeConfig);
-                                        $title.text(`${alertType.display} Alerts by Severity`)
-                                        renderPieChart(organization, projectName, repoId, $container, chartService, alertType, chartSize);
-                                    }
-                                    catch (err) {
-                                        consoleLog(`Error loading the alerts pie: ${err}`);
-                                    }
-                                    break;
-                                default:
-                                    try {
-                                        $title.text(`Advanced Security Alerts Trend`)
-                                        renderTrendLine(organization, projectName, repoId, $container, chartService, chartSize);
-                                    }
-                                    catch (err) {
-                                        consoleLog(`Error loading the alerts trend: ${err}`);
-                                    }
-                                    break;
-                            }
-                            consoleLog('rendered chart');
-                        }
-                        else {
-                            consoleLog('configuration is needed first, opening with empty values');
-                            // set the tile to indicate config is needed
-                            $title.text(`Configure the widget to get Advanced Security alerts trend information`);
-                        }
-
-                        consoleLog('returning WidgetStatusHelper.Success()');
+                    consoleLog('returning WidgetStatusHelper.Success()')
                 }
                 catch (err) {
-                    consoleLog(`Error loading the page contents: ${JSON.stringify(err)}`);
+                    consoleLog(`Error loading the page contents: ${JSON.stringify(err)}`)
                 }
-            VSS.notifyLoadSucceeded();
-        });
+                VSS.notifyLoadSucceeded()
+            }
+        );
     </script>
 
-    <div class="widget">
-        <h2 class="ghazdo-title">GHAzDo Hub test from Rob Bos's widget</h2>
-        <div id="Chart-Container"></div>
+    <div class="widget" id="progressDivContainer">
+        <div>
+            <div class="float" style="font-weight:600;font-size:larger;margin-right:7px;">Loading data</div>
+            <div class="loadingTitle float float-break"></div>
+        </div>
+        <div>
+            <div id="debugInfo" class="float float-break" date-startTime=""></div>
+        </div>
+        <div id="LoadingInfoContainer" class="column-container">
+            <div class="column">
+                <h3>Projects</h3>
+                <p class="alertValue projectCount">0</p>
+            </div>
+
+            <div class="column">
+                <h3>Repos</h3>
+                <p class="alertValue repoCount">0</p>
+            </div>
+
+            <div class="column">
+                <h3>Dependencies</h3>
+                <p class="alertValue dependencyAlertCount">0</p>
+            </div>
+
+            <div class="column">
+                <h3>Secrets</h3>
+                <p class="alertValue secretAlertCount">0</p>
+            </div>
+
+            <div class="column">
+                <h3>Code</h3>
+                <p class="alertValue codeAlertCount">0</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="widget float">
+        <h2 class="ghazdoTitle" id="TitleOverallTrend">Overall alert trend</h2>
+        <div id="ChartContainerOverallTrend"></div>
+    </div>
+
+    <div class="widget float">
+        <h2 class="ghazdoTitle" id="TitleOverallDependencyPie">Overall dependencies alert levels</h2>
+        <div id="ChartContainerOverallDependencyPie"></div>
+    </div>
+
+    <div class="widget float">
+        <h2 class="ghazdoTitle" id="TitleOverallCodeScanningPie">Overall code scanning alert levels</h2>
+        <div id="ChartContainerOverallCodeScanningPie"></div>
     </div>
 
     <style>
+        .main {
+            overflow: scroll;
+        }
+
         .widget {
             width: 320px;
             border: solid 1px silver;
@@ -134,6 +153,37 @@
 
         .region-headerBreadcrumb {
            display: none;
+        }
+
+        #progressDivContainer {
+            width: 435px;
+        }
+
+        .float {
+            float: left;
+        }
+
+        .float-break {
+            clear: right;
+        }
+
+        #LoadingInfoContainer{
+            clear: left;
+        }
+
+        .loading {
+            border: 8px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 8px solid #3498db;
+            width: 8px;
+            height: 8px;
+            margin-right: 5px;
+            animation: spin 3s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </body>

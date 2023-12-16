@@ -5,3 +5,9 @@ In this branch was added:
 
 
 Do check the versions of the widget before pushing!
+
+
+WIP:
+ Load all alerts in the hub and show them.
+ Currently the continue after the project calls does not go into loading the alerts,
+ for org xpirit, seems to work in raj-bos
