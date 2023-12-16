@@ -10,7 +10,7 @@
             VSS.init({
                 explicitNotifyLoaded: true,
                 usePlatformStyles: true
-            });
+            })
 
             VSS.require(
                 ["TFS/Dashboards/WidgetHelpers", "VSS/Context"],
@@ -18,38 +18,38 @@
                 {
                     WidgetHelpers.IncludeWidgetStyles();
                     VSS.register("GHAzDoWidget", function () {
-                        const webContext = VSS.getWebContext();
-                        const project = webContext.project;
-                        const organization = webContext.account.name;
-                        const projectId = project.id;
+                        const webContext = VSS.getWebContext()
+                        const project = webContext.project
+                        const organization = webContext.account.name
+                        const projectId = project.id
                         // convert project.name to url encoding
-                        const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26");
+                        const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26")
 
-                        consoleLog('project id: ' + projectId);
-                        consoleLog('project name: ' + projectName);
-                        consoleLog('organization name: ' + organization);
+                        consoleLog('project id: ' + projectId)
+                        consoleLog('project name: ' + projectName)
+                        consoleLog('organization name: ' + organization)
 
                         return {
                             load: async function (widgetSettings) {
-                                await loadWidget(widgetSettings, organization, projectName);
+                                await loadWidget(widgetSettings, organization, projectName)
 
-                                return WidgetHelpers.WidgetStatusHelper.Success();
+                                return WidgetHelpers.WidgetStatusHelper.Success()
                             },
                             reload: async function (widgetSettings) {
-                                consoleLog('reload with widgetSettings: ' + JSON.stringify(widgetSettings));
-                                await loadWidget(widgetSettings, organization, projectName);
-                                return;
+                                consoleLog('reload with widgetSettings: ' + JSON.stringify(widgetSettings))
+                                await loadWidget(widgetSettings, organization, projectName)
+                                return
                             }
                         }
-                    });
-                    VSS.notifyLoadSucceeded();
+                    })
+                    VSS.notifyLoadSucceeded()
                 }
-            );
+            )
         </script>
 
     </head>
     <body>
-        <div class="widget GHAzDo-widget">
+        <div class="widget GHAzDo-widget" id="GHAzDo-widget">
             <h2 class="ghazdo-title">GitHub Advanced Security Alerts</h2>
             <div id="query-info-container" class="column-container">
 

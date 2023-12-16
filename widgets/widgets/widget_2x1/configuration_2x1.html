@@ -14,9 +14,28 @@
                 VSS.require(["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient"],
                   function (Service, WidgetHelpers, context, GitWebApi) {
                     VSS.register("GHAzDoWidget.Configuration", async function () {
-                        var $repoDropdown = $("#repo-dropdown");
+                        var $repoDropdown = $("#repo-dropdown")
+                        var $colorPicker = $("#color-picker")
                         // get a repos in this project
                         const repos = await getRepos(VSS, Service, GitWebApi);
+
+                        async function reloadWidget(widgetConfigurationContext) {
+                            let repo;
+                            if (repos) {
+                                // find the repo with this name
+                                repo = repos.find(r => r.name === $repoDropdown.val());
+                            }
+                            var customSettings = {
+                                data: JSON.stringify({
+                                        repo: $repoDropdown.val(),
+                                        repoId: repo.id,
+                                        color: $colorPicker.val()
+                                    })
+                            };
+                            var eventName = WidgetHelpers.WidgetEvent.ConfigurationChange;
+                            var eventArgs = WidgetHelpers.WidgetEvent.Args(customSettings);
+                            widgetConfigurationContext.notify(eventName, eventArgs);
+                        }
 
                         return {
                             load: async function (widgetSettings, widgetConfigurationContext) {
@@ -38,22 +57,17 @@
                                      $repoDropdown.val(settings.repo);
                                  }
 
-                                 $repoDropdown.on("change", function () {
-                                    let repo;
-                                    if (repos) {
-                                        // find the repo with this name
-                                        repo = repos.find(r => r.name === $repoDropdown.val());
-                                    }
+                                if (settings && settings.color) {
+                                    // select the color that was saved in the settings
+                                     $colorPicker.val(settings.color);
+                                }
 
-                                    var customSettings = {
-                                        data: JSON.stringify({
-                                                repo: $repoDropdown.val(),
-                                                repoId: repo.id
-                                            })
-                                    };
-                                    var eventName = WidgetHelpers.WidgetEvent.ConfigurationChange;
-                                    var eventArgs = WidgetHelpers.WidgetEvent.Args(customSettings);
-                                    widgetConfigurationContext.notify(eventName, eventArgs);
+                                $colorPicker.on("change", async function () {
+                                    await reloadWidget(widgetConfigurationContext);
+                                });
+
+                                $repoDropdown.on("change", async function () {
+                                    await reloadWidget(widgetConfigurationContext);
                                 });
 
                                 return WidgetHelpers.WidgetStatusHelper.Success();
@@ -68,7 +82,8 @@
                                 var customSettings = {
                                     data: JSON.stringify({
                                             repo: $repoDropdown.val(),
-                                            repoId: repo.id
+                                            repoId: repo.id,
+                                            color: $colorPicker.val()
                                         })
                                 };
                                 console.log(`Saving the settings with ${JSON.stringify(customSettings)}`)
@@ -81,6 +96,12 @@
             </script>
         </head>
         <body>
+            <style>
+                td {
+                    padding: 5px;
+                }
+            </style>
+
             <div class="container">
                 <fieldset>
                     <label class="label">Repository: </label>
@@ -89,5 +110,15 @@
                     </select>
                 </fieldset>
             </div>
+            <table>
+                <tr>
+                    <td>
+                        <label class="label">Background color: </label>
+                    </td>
+                    <td>
+                        <input type="color" id="color-picker" value="#68217a">
+                    </td>
+                </tr>
+            </table>
         </body>
     </html>
