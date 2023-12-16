@@ -248,16 +248,16 @@ function checkAlertActiveOnDate(alert, dateStr) {
     return seenClosed;
 }
 
-function getAlertsTrendLine(alerts, type) {
+function getAlertsTrendLine(alerts, type, daysToGoBack = 21, summaryBucket = 1) {
     consoleLog(`getAlertsTrendLine for type ${type}`);
 
     const trendLine = [];
     const trendLineSimple = [];
     const today = new Date();
-    const threeWeeksAgo = new Date();
-    threeWeeksAgo.setDate(today.getDate() - 21);
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - daysToGoBack);
 
-    for (let d = threeWeeksAgo; d <= today; d.setDate(d.getDate() + 1)) {
+    for (let d = startDate; d <= today; d.setDate(d.getDate() + summaryBucket)) {
         const date = new Date(d);
         const dateStr = date.toISOString().split('T')[0];
 
@@ -275,13 +275,13 @@ function getAlertsTrendLine(alerts, type) {
     return trendLineSimple;
 }
 
-function getDatePoints() {
+function getDatePoints(daysToGoBack = 21, summaryBucket = 1) {
     const trendDates = [];
     const today = new Date();
-    const threeWeeksAgo = new Date();
-    threeWeeksAgo.setDate(today.getDate() - 21);
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - daysToGoBack);
 
-    for (let d = threeWeeksAgo; d <= today; d.setDate(d.getDate() + 1)) {
+    for (let d = startDate; d <= today; d.setDate(d.getDate() + summaryBucket)) {
         const date = new Date(d);
         const dateStr = date.toISOString().split('T')[0];
         trendDates.push(dateStr);

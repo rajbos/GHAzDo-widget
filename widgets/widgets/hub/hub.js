@@ -6,6 +6,7 @@ async function createCharts({chartService, projectName, organization}) {
         alertType: 1,
         repo: "All repos",
         repoId: "-1",
+        widgetWidth: 4,
         containerName: "ChartContainerOverallTrend",
         titleName: "TitleOverallTrend"
     }
@@ -79,12 +80,16 @@ async function createHubChart({chartService, organization, projectName, data}) {
             columnSpan: 2
         }
 
+        if (data.widgetWidth) {
+            chartSize.columnSpan = data.widgetWidth;
+        }
+
         switch (chartType) {
             case "2":
                 try {
                     const alertType = GetAlertTypeFromValue(alertTypeConfig)
                     if (titleElement) {
-                        titleElement.textContent = `${alertType.display} Alerts by Severity`
+                        titleElement.textContent = `${alertType.display} alerts by severity`
                     }
                     await renderPieChart(organization, projectName, repoId, containerElement, chartService, alertType, chartSize)
                 }
@@ -95,9 +100,11 @@ async function createHubChart({chartService, organization, projectName, data}) {
             default:
                 try {
                     if (titleElement) {
-                        titleElement.textContent = `Advanced Security Alerts Trend`
+                        titleElement.textContent = `Advanced Security alerts trend for ${projectName}`
                     }
-                    await renderTrendLine(organization, projectName, repoId, containerElement, chartService, chartSize)
+                    const daysToGoBack = 26 * 7 // look back half a year in chunks that count up to today
+                    const summaryBucket = 7
+                    await renderTrendLine(organization, projectName, repoId, containerElement, chartService, chartSize, daysToGoBack, summaryBucket)
                 }
                 catch (err) {
                     consoleLog(`Error loading the alerts trend: ${err}`)
