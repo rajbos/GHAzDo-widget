@@ -163,6 +163,20 @@
       }
     },
     {
+      "id": "GHAzDoWidget.Hub",
+      "type": "ms.vss-web.hub",
+      "description": "GHAzDO Hub",
+      "targets": [
+        "ms.vss-code-web.code-hub-group"
+      ],
+      "properties": {
+        "name": "Advanced Security Dashboard",
+        "uri": "widgets/widgets/hub/hub.html",
+        "iconName": "Shield",
+        "order": 99
+      }
+    },
+    {
       "id": "GHAzDoDependencyReviewTask",
       "type": "ms.vss-distributed-task.task",
       "targets": [

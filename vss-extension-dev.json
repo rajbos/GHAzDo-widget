@@ -221,11 +221,10 @@
       "type": "ms.vss-web.hub",
       "description": "[DEV] GHAzDO Hub",
       "targets": [
-        "ms.vss-work-web.work-hub-group",
         "ms.vss-code-web.code-hub-group"
       ],
       "properties": {
-        "name": "Advanced Security Dashboard",
+        "name": "Advanced Security [DEV]",
         "uri": "widgets/widgets/hub/hub.html",
         "iconName": "Shield",
         "order": 99
