@@ -52,6 +52,11 @@ async function loadWidget(widgetSettings, organization, projectName, VSS, Servic
         title.attr('title', repoName);
         consoleLog(`title set to [${repoName}]`);
 
+        // set the color
+        const color = data.color ? data.color : '#68217a'; // default to purple
+        const widget = document.getElementById('GHAzDo-widget');
+        widget.style.backgroundColor = `${color}`;
+
         // GHAS is only available on the SaaS version, so we can hardcode the domain
         linkBase = `https://dev.azure.com/${organization}/${projectName}/_git/${repoName}/alerts`;
     }

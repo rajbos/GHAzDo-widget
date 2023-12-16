@@ -16,6 +16,7 @@
                     VSS.register("GHAzDoWidget.Configuration_1x1", async function () {
                         var $repoDropdown = $("#repo-dropdown");
                         var $repoAlertType = $("#repo-alert-type");
+                        var $colorPicker = $("#color-picker");
                         const repos = await getRepos(VSS, Service, GitWebApi);
                         const projects = await getProjects(VSS, Service, RestClient);
 
@@ -32,7 +33,8 @@
                                 data: JSON.stringify({
                                         repo: $repoDropdown.val(),
                                         repoId: repo?.id,
-                                        repoAlertType: $repoAlertType.val()
+                                        repoAlertType: $repoAlertType.val(),
+                                        color: $colorPicker.val()
                                     })
                             };
                             var eventName = WidgetHelpers.WidgetEvent.ConfigurationChange;
@@ -60,12 +62,21 @@
                                      $repoAlertType.val(settings.repoAlertType);
                                 }
 
+                                if (settings && settings.color) {
+                                    // select the color that was saved in the settings
+                                     $colorPicker.val(settings.color);
+                                }
+
                                 // register a change event handler for the dropdowns
                                 $repoDropdown.on("change", async function () {
                                     await reloadWidget(widgetConfigurationContext);
                                 });
 
                                 $repoAlertType.on("change", async function () {
+                                    await reloadWidget(widgetConfigurationContext);
+                                });
+
+                                $colorPicker.on("change", async function () {
                                     await reloadWidget(widgetConfigurationContext);
                                 });
 
@@ -81,7 +92,8 @@
                                     data: JSON.stringify({
                                             repo: $repoDropdown.val(),
                                             repoId: repo?.id,
-                                            repoAlertType: $repoAlertType.val()
+                                            repoAlertType: $repoAlertType.val(),
+                                            color: $colorPicker.val()
                                         })
                                 };
                                 consoleLog(`Saving the 1x1 settings with ${JSON.stringify(customSettings)}`)
@@ -98,6 +110,10 @@
                 .dropdown {
                     margin-top: 10px;
                     min-width: 150px;
+                }
+
+                td {
+                    padding: 5px;
                 }
             </style>
             <div class="container">
@@ -120,6 +136,14 @@
                                 <option value="2">Secret scanning alerts</option>
                                 <option value="3">Code scanning alerts</option>
                             </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label class="label">Background color: </label>
+                        </td>
+                        <td>
+                            <input type="color" id="color-picker" value="#68217a">
                         </td>
                     </tr>
                 </table>
