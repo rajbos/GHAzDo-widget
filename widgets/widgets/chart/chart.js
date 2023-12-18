@@ -127,11 +127,14 @@ async function createDurationChart($container, chartService, alertSeverityCount,
 }
 
 async function renderDurationChart({organization, projectName, repoId, $container, chartService, alertType, widgetSize}) {
-    consoleLog('renderTrendLine')
+    consoleLog(`renderDurationChart for alertType: [${alertType.name}]`)
     try {
         // get the trend data for alerts first
         const showClosed = true
-        const alertTrendLines = await getAlertsTrendLines(organization, projectName, repoId, alertType, showClosed)
+        const overviewType = true
+        const daysToGoBack = 21
+        const summaryBucket = 1
+        const alertTrendLines = await getAlertsTrendLines(organization, projectName, repoId, daysToGoBack, summaryBucket, alertType, overviewType, showClosed)
 
         createDurationChart($container, chartService, alertTrendLines, widgetSize)
     }

@@ -75,7 +75,7 @@
                                     case "3":
                                         try {
                                             const alertType = GetAlertTypeFromValue(alertTypeConfig)
-                                            $title.text(`Closed ${alertType.display} Alerts by Duration`)
+                                            $title.text(`${alertType.display} Alerts status trend`)
                                             renderDurationChart({organization, projectName, repoId, $container, chartService, alertType, widgetSize: widgetSettings.size})
                                         }
                                         catch (err) {
