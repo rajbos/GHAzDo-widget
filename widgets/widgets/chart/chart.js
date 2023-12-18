@@ -32,27 +32,27 @@ async function createChart($container, chartService, alertTrendLines, widgetSize
     };
 
     try {
-        chartService.createChart($container, chartOptions);
+        chartService.createChart($container, chartOptions)
     }
     catch (err) {
-        console.log(`Error creating line chart: ${err}`);
+        console.log(`Error creating line chart: ${err}`)
     }
 }
 
 function getChartWidthFromWidgetSize(widgetSize) {
     // a column is 160px wide, and gutters are 10px wide, and there is 1 14px margins on the right side to handle
-    return 160 * widgetSize.columnSpan + (10 * (widgetSize.columnSpan -1)) - (1 * 14);
+    return 160 * widgetSize.columnSpan + (10 * (widgetSize.columnSpan -1)) - (1 * 14)
 }
 
 async function createPieChart($container, chartService, alertSeverityCount, widgetSize) {
     // convert alertSeverityCount to two arrays, one for the labels and one for the data
-    consoleLog(`createPieChart for alertSeverityCount: ${JSON.stringify(alertSeverityCount)}`);
-    const labels = [];
-    const data = [];
+    consoleLog(`createPieChart for alertSeverityCount: ${JSON.stringify(alertSeverityCount)}`)
+    const data = []
+    const labels = []
     for (const index in alertSeverityCount) {
-        const item = alertSeverityCount[index];
-        labels.push(item.severity);
-        data.push(item.count);
+        const item = alertSeverityCount[index]
+        labels.push(item.severity)
+        data.push(item.count)
     }
 
     var chartOptions = {
@@ -71,26 +71,88 @@ async function createPieChart($container, chartService, alertSeverityCount, widg
             "showLabels": "true",
             "size": 200
         }
-    };
+    }
 
     try {
-        chartService.createChart($container, chartOptions);
+        chartService.createChart($container, chartOptions)
     }
     catch (err) {
-        console.log(`Error creating pie chart: ${err}`);
+        console.log(`Error creating pie chart: ${err}`)
+    }
+}
+
+async function createDurationChart($container, chartService, alertSeverityCount, widgetSize) {
+    consoleLog(`createDurationChart for alertSeverityCount: ${JSON.stringify(alertSeverityCount)}`)
+    const datePoints = getDatePoints();
+    const alertsOpenTrend = alertSeverityCount.alertsOpenTrend
+    const alertsDismissedTrend = alertSeverityCount.alertsDismissedTrend
+    const alertFixedTrend = alertSeverityCount.alertFixedTrend
+
+    var chartOptions = {
+        "hostOptions": {
+            "height": "290",
+            "width": getChartWidthFromWidgetSize(widgetSize)
+        },
+        "chartType": "stackedArea",
+        "series": [
+            {
+                "name": "Open",
+                "data": alertsOpenTrend
+            },
+            {
+                "name": "Dismissed",
+                "data": alertsDismissedTrend
+            },
+            {
+                "name": "Fixed",
+                "data": alertFixedTrend
+            }
+        ],
+        "xAxis": {
+            "labelValues": datePoints,
+            "labelFormatMode": "dateTime", // format is 2023-09-17
+        },
+        "specializedOptions": {
+            "showLabels": "true",
+            "size": 200
+        }
+    }
+
+    try {
+        chartService.createChart($container, chartOptions)
+    }
+    catch (err) {
+        console.log(`Error creating pie chart: ${err}`)
+    }
+}
+
+async function renderDurationChart({organization, projectName, repoId, $container, chartService, alertType, widgetSize}) {
+    consoleLog(`renderDurationChart for alertType: [${alertType.name}]`)
+    try {
+        // get the trend data for alerts first
+        const showClosed = true
+        const overviewType = true
+        const daysToGoBack = 21
+        const summaryBucket = 1
+        const alertTrendLines = await getAlertsTrendLines(organization, projectName, repoId, daysToGoBack, summaryBucket, alertType, overviewType, showClosed)
+
+        createDurationChart($container, chartService, alertTrendLines, widgetSize)
+    }
+    catch (err) {
+        consoleLog(`Error loading the alerts trend: ${err}`)
     }
 }
 
 async function renderPieChart(organization, projectName, repoId, $container, chartService, alertType, widgetSize) {
-    consoleLog('renderPieChart');
+    consoleLog('renderPieChart')
     try {
         // get the trend data for alerts first
-        const alertSeverityCount = await getAlertSeverityCounts(organization, projectName, repoId, alertType);
+        const alertSeverityCount = await getAlertSeverityCounts(organization, projectName, repoId, alertType)
 
-        createPieChart($container, chartService, alertSeverityCount, widgetSize);
+        createPieChart($container, chartService, alertSeverityCount, widgetSize)
     }
     catch (err) {
-        consoleLog(`Error loading the alerts pie: ${err}`);
+        consoleLog(`Error loading the alerts pie: ${err}`)
     }
 }
 
@@ -106,6 +168,6 @@ async function renderTrendLine(organization, projectName, repoId, $container, ch
         createChart($container, chartService, alertTrendLines, widgetSize, daysToGoBack, summaryBucket);
     }
     catch (err) {
-        consoleLog(`Error loading the alerts trend: ${err}`);
+        consoleLog(`Error loading the alerts trend: ${err}`)
     }
 }

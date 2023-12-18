@@ -187,7 +187,7 @@ async function storeAlerts(repoId, alertResult) {
     }
 }
 
-async function getAlertsTrendLines(organization, projectName, repoId, daysToGoBack, summaryBucket) {
+async function getAlertsTrendLines(organization, projectName, repoId, daysToGoBack, summaryBucket, alertType, overviewType = false, showClosed = false) {
     consoleLog(`getAlertsTrend for organization [${organization}], project [${projectName}], repo [${repoId}]`)
     try {
         alertResult = null
@@ -214,23 +214,40 @@ async function getAlertsTrendLines(organization, projectName, repoId, daysToGoBa
                 codeAlertsTrend: []
             }
         }
+        if (overviewType === false) {
+            consoleLog('Loading all alerts trend lines')
+            // load the Secret alerts and create a trend line over the last 3 weeks
+            const secretAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.SECRET.name)
+            const secretAlertsTrend = getAlertsTrendLine(secretAlerts, AlertType.SECRET.name, daysToGoBack, summaryBucket)
+            consoleLog('')
+            // load the Dependency alerts and create a trend line over the last 3 weeks
+            const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name)
+            const dependencyAlertsTrend = getAlertsTrendLine(dependencyAlerts, AlertType.DEPENDENCY.name, daysToGoBack, summaryBucket)
+            consoleLog('')
+            // load the Code alerts and create a trend line over the last 3 weeks
+            const codeAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.CODE.name)
+            const codeAlertsTrend = getAlertsTrendLine(codeAlerts, AlertType.CODE.name, daysToGoBack, summaryBucket)
 
-        // load the Secret alerts and create a trend line over the last 3 weeks
-        const secretAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.SECRET.name)
-        const secretAlertsTrend = getAlertsTrendLine(secretAlerts, AlertType.SECRET.name, daysToGoBack, summaryBucket)
-        consoleLog('')
-        // load the Dependency alerts and create a trend line over the last 3 weeks
-        const dependencyAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.DEPENDENCY.name)
-        const dependencyAlertsTrend = getAlertsTrendLine(dependencyAlerts, AlertType.DEPENDENCY.name, daysToGoBack, summaryBucket)
-        consoleLog('')
-        // load the Code alerts and create a trend line over the last 3 weeks
-        const codeAlerts = alertResult.value.filter(alert => alert.alertType === AlertType.CODE.name)
-        const codeAlertsTrend = getAlertsTrendLine(codeAlerts, AlertType.CODE.name, daysToGoBack, summaryBucket)
+            return {
+                    secretAlertsTrend: secretAlertsTrend,
+                    dependencyAlertsTrend: dependencyAlertsTrend,
+                    codeAlertsTrend: codeAlertsTrend
+            }
+        }
+        else {
+            consoleLog(`Loading alerts trend lines for alert type: [$alertType.name}]`)
+            // filter the alerts based on the alertType
+            const alerts = alertResult.value.filter(alert => alert.alertType === alertType.name)
+            // create a trend line over the last 3 weeks for number of open alerts
+            const alertsOpenTrend = getAlertsTrendLine(alerts, alertType.name, daysToGoBack, summaryBucket, 'open')
+            const alertsDismissedTrend = getAlertsTrendLine(alerts, alertType.name, daysToGoBack, summaryBucket, 'dismissed')
+            const alertFixedTrend = getAlertsTrendLine(alerts, alertType.name, daysToGoBack, summaryBucket, 'fixed')
 
-        return {
-                secretAlertsTrend: secretAlertsTrend,
-                dependencyAlertsTrend: dependencyAlertsTrend,
-                codeAlertsTrend: codeAlertsTrend
+            return {
+                alertsOpenTrend: alertsOpenTrend,
+                alertsDismissedTrend: alertsDismissedTrend,
+                alertFixedTrend: alertFixedTrend
+            }
         }
     }
     catch (err) {
@@ -258,7 +275,29 @@ function checkAlertActiveOnDate(alert, dateStr) {
     return seenClosed;
 }
 
-function getAlertsTrendLine(alerts, type, daysToGoBack = 21, summaryBucket = 1) {
+function checkAlertDismissedOnDate(alert, dateStr) {
+    // check if the alert.firstSeenDate is within the date range
+    // and if fixedDate is not set or is after the date range
+    const seenClosed = (alert.firstSeenDate.split('T')[0] <= dateStr && (!alert.fixedDate || alert.fixedDate.split('T')[0] > dateStr));
+    if (seenClosed) {
+        // check the dismissal.requestedOn date as well
+        if (alert.dismissal && alert.dismissal.requestedOn) {
+            const dismissed = (alert.dismissal.requestedOn.split('T')[0] <= dateStr);
+            return dismissed;
+        }
+    }
+
+    return false;
+}
+
+function checkAlertFixedOnDate(alert, dateStr) {
+    // check if the alert.firstSeenDate is within the date range
+    // and if fixedDate is not set or is after the date range
+    const seenClosed = (alert.firstSeenDate.split('T')[0] <= dateStr && (alert.fixedDate && alert.fixedDate.split('T')[0] < dateStr));
+    return seenClosed;
+}
+
+function getAlertsTrendLine(alerts, type, daysToGoBack = 21, summaryBucket = 1, filter = 'open') {
     consoleLog(`getAlertsTrendLine for type ${type}`);
 
     const trendLine = [];
@@ -270,9 +309,23 @@ function getAlertsTrendLine(alerts, type, daysToGoBack = 21, summaryBucket = 1) 
     for (let d = startDate; d <= today; d.setDate(d.getDate() + summaryBucket)) {
         const date = new Date(d);
         const dateStr = date.toISOString().split('T')[0];
-
-        const alertsOnDate = alerts.filter(alert => checkAlertActiveOnDate(alert, dateStr));
-        console.log(`On [${dateStr}] there were [${alertsOnDate.length}] active ${type} alerts`);
+        let alertsOnDate = []
+        switch (filter) {
+            case 'open':
+                alertsOnDate = alerts.filter(alert => checkAlertActiveOnDate(alert, dateStr));
+                break;
+            case 'dismissed':
+                alertsOnDate = alerts.filter(alert => checkAlertDismissedOnDate(alert, dateStr));
+                break;
+            case 'fixed':
+                alertsOnDate = alerts.filter(alert => checkAlertFixedOnDate(alert, dateStr));
+                break;
+            default:
+                // get all active alerts on this date
+                alertsOnDate = alerts.filter(alert => checkAlertActiveOnDate(alert, dateStr));
+                break;
+        }
+        console.log(`On [${dateStr}] there were [${alertsOnDate.length}] [${filter}] [${type}] alerts`);
         trendLine.push({
             date: dateStr,
             count: alertsOnDate.length
