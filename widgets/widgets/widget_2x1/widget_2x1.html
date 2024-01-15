@@ -23,7 +23,7 @@
                         const organization = webContext.account.name
                         const projectId = project.id
                         // convert project.name to url encoding
-                        const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26")
+                        const projectName = handleNames(project.name)
 
                         consoleLog('project id: ' + projectId)
                         consoleLog('project name: ' + projectName)
@@ -31,6 +31,7 @@
 
                         return {
                             load: async function (widgetSettings) {
+                                consoleLog('load with widgetSettings: ' + JSON.stringify(widgetSettings))
                                 await loadWidget(widgetSettings, organization, projectName)
 
                                 return WidgetHelpers.WidgetStatusHelper.Success()
