@@ -17,7 +17,6 @@
                         const $repoDropdown = $("#repo-dropdown");
                         const $chartTypeDropdown = $("#chart-type");
                         const $alertTypeDropdown = $("#alert-type");
-                        const repos = await getRepos(VSS, Service, GitWebApi);
 
                         function reloadWidget(widgetConfigurationContext) {
                             const customSettings = getSettings();
@@ -27,28 +26,21 @@
                         }
 
                         function getSettings() {
-                            if (repos) {
-                                // find the repo with this name
-                                const repo = repos.find(r => r.name === $repoDropdown.val());
 
-                                if (repo) {
-                                    var customSettings = {
-                                        data: JSON.stringify({
-                                                repo: $repoDropdown.val(),
-                                                repoId: repo.id,
-                                                chartType: $chartTypeDropdown.val(),
-                                                alertType: $alertTypeDropdown.val()
-                                            })
-                                    };
-                                    return customSettings;
-                                }
-                            }
-
-                            return {};
+                            var customSettings = {
+                                data: JSON.stringify({
+                                        repo: getSelectedRepoNameFromDropdown($repoDropdown),
+                                        repoId: getSelectedRepoIdFromDropdown($repoDropdown),
+                                        chartType: $chartTypeDropdown.val(),
+                                        alertType: $alertTypeDropdown.val()
+                                    })
+                            };
+                            return customSettings;
                         }
 
                         function reloadChartOptions() {
                             const chartType = $chartTypeDropdown.val();
+                            console.log(`Inside reloadChartOptions with chartType [${chartType}]`);
                             if (chartType === "1") {
                                 // trend line
                                 $("#alertTypePanel").hide();
@@ -57,39 +49,36 @@
                                 // pie chart
                                 $("#alertTypePanel").show();
                             }
+                            else if (chartType === "3") {
+                                // pie chart
+                                $("#alertTypePanel").show();
+                            }
                         }
 
                         return {
                             load: async function (widgetSettings, widgetConfigurationContext) {
                                 var settings = logWidgetSettings(widgetSettings, VSS, "Chart.2x2");
-
-                                // add all repos as selection options to the dropdown
+                                const repos = await getRepos(VSS, Service, GitWebApi);
                                 if (repos) {
-                                    // add a top option to select no repo
-                                    $repoDropdown.append(`<option value="">Select a repository</option>`);
-                                    // sort the repo alphabetically
-                                    repos.sort((a, b) => a.name.localeCompare(b.name));
-                                    repos.forEach(r => {
-                                        $repoDropdown.append(`<option value=${r.name}>${r.name}</option>`);
-                                    });
+                                    fillSelectRepoDropdown($repoDropdown, repos);
                                 }
 
-                                if (settings && settings.repo) {
+                                if (settings && settings.repoId) {
                                     // select the repo that was saved in the settings
-                                     $repoDropdown.val(settings.repo);
-                                 }
+                                     $repoDropdown.val(settings.repoId);
+                                }
 
-                                 if (settings && settings.chartType) {
+                                if (settings && settings.chartType) {
                                     // select the chartType that was saved in the settings
                                      $chartTypeDropdown.val(settings.chartType);
-                                 }
+                                }
 
                                 if (settings && settings.alertType) {
                                     // select the alertType that was saved in the settings
                                     $alertTypeDropdown.val(settings.alertType);
                                 }
 
-                                 // register a change event handler for the dropdowns
+                                // register a change event handler for the dropdowns
                                 $repoDropdown.on("change", function () {
                                     reloadWidget(widgetConfigurationContext)
                                 });
@@ -99,6 +88,9 @@
                                     reloadChartOptions();
                                 });
 
+                                // call the chartTypeDrowdown change handler to show/hide the alertType dropdown
+                                reloadChartOptions();
+
                                 $alertTypeDropdown.on("change", function () {
                                     reloadWidget(widgetConfigurationContext)
                                 });
@@ -107,6 +99,12 @@
                             },
                             onSave: async function() {
                                 const customSettings = getSettings();
+                                let repoId = getSelectedRepoIdFromDropdown($repoDropdown);
+                                if (repoId == 0 || repoId == 1) { // 0 = select a repo, 1 = all repos
+                                    // do not save
+                                    console.log(`Not saving the settings because repoId is [${repoId}]`);
+                                    return WidgetHelpers.WidgetConfigurationSave.Invalid();
+                                }
 
                                 console.log(`Saving the Chart.2x2 settings with ${JSON.stringify(customSettings)}`)
                                 return WidgetHelpers.WidgetConfigurationSave.Valid(customSettings);
