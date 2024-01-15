@@ -89,15 +89,25 @@ function GetAlertTypeFromValue(value) {
     }
 }
 
-function fillSelectRepoDropdown(dropDown, repos) {
+function fillSelectRepoDropdown(dropDown, repos, showAllRepos = false) {
     // add a top option to select no repo
-    dropDown.append(`<option value="">Select a repository</option>`);
-    dropDown.append(`<option value="">All repos in this project</option>`);
+    dropDown.append(`<option value="0">Select a repository</option>`);
+    if (showAllRepos) {
+        dropDown.append(`<option value="1">All repos in this project</option>`);
+    }
     // sort the repo alphabetically
     repos.sort((a, b) => a.name.localeCompare(b.name));
     repos.forEach(r => {
-        dropDown.append(`<option value=${r.name}>${r.name}</option>`);
+        dropDown.append(`<option value=${r.id}>${r.name}</option>`);
     });
+}
+
+function getSelectedRepoIdFromDropdown(dropDown) {
+    return dropDown.val();
+}
+
+function getSelectedRepoNameFromDropdown(dropDown) {
+    return dropDown.find("option:selected").text();
 }
 
 async function getAlerts(organization, projectName, repoId, repos, project, repo) {
@@ -587,6 +597,12 @@ async function showRepoInfo(repos, project, organization, progressDiv, activeCal
             getAlertCalls.push({organization, project, repo});
         }
     }
+}
+
+function handleNames(input) {
+    // replace spaces with %20 in the input
+    return input.replace(/ /g, '%20')  // space with %20
+                .replace(/&/g, "%26")  // & with %26
 }
 
 let debugInfo = null

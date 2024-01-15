@@ -17,22 +17,13 @@
                         var $repoDropdown = $("#repo-dropdown");
                         var $repoAlertType = $("#repo-alert-type");
                         var $colorPicker = $("#color-picker");
-                        const repos = await getRepos(VSS, Service, GitWebApi);
-                        const projects = await getProjects(VSS, Service, RestClient);
-
-                        consoleLog(`Found [${repos?.length}] repos and [${projects?.length}] projects`);
 
                         async function reloadWidget(widgetConfigurationContext) {
-                            let repo;
-                            if (repos) {
-                                // find the repo with this name
-                                repo = repos.find(r => r.name === $repoDropdown.val());
-                            }
 
                             var customSettings = {
                                 data: JSON.stringify({
-                                        repo: $repoDropdown.val(),
-                                        repoId: repo?.id,
+                                        repo: getSelectedRepoNameFromDropdown($repoDropdown),
+                                        repoId: getSelectedRepoIdFromDropdown($repoDropdown),
                                         repoAlertType: $repoAlertType.val(),
                                         color: $colorPicker.val()
                                     })
@@ -47,6 +38,7 @@
                                 var settings = logWidgetSettings(widgetSettings, VSS, "1x1");
 
                                 // add all repos as selection options to the dropdown
+                                const repos = await getRepos(VSS, Service, GitWebApi);
                                 if (repos) {
                                     // todo: use in all other widget locations as well
                                     fillSelectRepoDropdown($repoDropdown, repos)
@@ -54,7 +46,7 @@
 
                                 if (settings && settings.repo) {
                                     // select the repo that was saved in the settings
-                                     $repoDropdown.val(settings.repo);
+                                     $repoDropdown.val(settings.repoId);
                                 }
 
                                 if (settings && settings.repoAlertType) {
@@ -83,15 +75,17 @@
                                 return WidgetHelpers.WidgetStatusHelper.Success();
                             },
                             onSave: async function() {
-                                let repo;
-                                if (repos) {
-                                    // find the repo with this name
-                                    repo = repos.find(r => r.name === $repoDropdown.val());
+                                let repoId = getSelectedRepoIdFromDropdown($repoDropdown);
+                                if (repoId == 0 || repoId == 1) { // 0 = select a repo, 1 = all repos
+                                    // do not save
+                                    console.log(`Not saving the settings because repoId is [${repoId}]`);
+                                    return WidgetHelpers.WidgetConfigurationSave.Invalid();
                                 }
+
                                 var customSettings = {
                                     data: JSON.stringify({
-                                            repo: $repoDropdown.val(),
-                                            repoId: repo?.id,
+                                            repo: getSelectedRepoNameFromDropdown($repoDropdown),
+                                            repoId: repoId,
                                             repoAlertType: $repoAlertType.val(),
                                             color: $colorPicker.val()
                                         })
