@@ -14,21 +14,21 @@
                 VSS.require(["VSS/Service", "TFS/Dashboards/WidgetHelpers", "VSS/Context", "TFS/VersionControl/GitRestClient"],
                   function (Service, WidgetHelpers, context, GitWebApi) {
                     VSS.register("GHAzDoWidget.Configuration", async function () {
-                        var $repoDropdown = $("#repo-dropdown")
-                        var $colorPicker = $("#color-picker")
-                        // get a repos in this project
-                        const repos = await getRepos(VSS, Service, GitWebApi);
+                        var $repoDropdown = $("#repo-dropdown");
+                        var $colorPicker = $("#color-picker");
 
                         async function reloadWidget(widgetConfigurationContext) {
-                            let repo;
-                            if (repos) {
-                                // find the repo with this name
-                                repo = repos.find(r => r.name === $repoDropdown.val());
+                            let repoId = getSelectedRepoIdFromDropdown($repoDropdown);
+                            if (repoId == 0 || repoId == 1) { // 0 = select a repo, 1 = all repos
+                                // do not reload with errors
+                                console.log(`Not reloading the settings because repoId is [${repoId}]`);
+                                return;
                             }
+
                             var customSettings = {
                                 data: JSON.stringify({
-                                        repo: $repoDropdown.val(),
-                                        repoId: repo.id,
+                                        repo: getSelectedRepoNameFromDropdown($repoDropdown),
+                                        repoId: getSelectedRepoIdFromDropdown($repoDropdown),
                                         color: $colorPicker.val()
                                     })
                             };
@@ -42,26 +42,22 @@
                                 var settings = logWidgetSettings(widgetSettings, VSS, "2x1");
 
                                 // add all repos as selection options to the dropdown
+                                const repos = await getRepos(VSS, Service, GitWebApi);
                                 if (repos) {
-                                    // add a top option to select no repo
-                                    $repoDropdown.append(`<option value="">Select a repository</option>`);
-                                    // sort the repo alphabetically
-                                    repos.sort((a, b) => a.name.localeCompare(b.name));
-                                    repos.forEach(r => {
-                                        $repoDropdown.append(`<option value=${r.name}>${r.name}</option>`);
-                                    });
+                                    fillSelectRepoDropdown($repoDropdown, repos, false);
                                 }
 
-                                if (settings && settings.repo) {
+                                if (settings && settings.repoId) {
                                     // select the repo that was saved in the settings
-                                     $repoDropdown.val(settings.repo);
-                                 }
+                                     $repoDropdown.val(settings.repoId);
+                                }
 
                                 if (settings && settings.color) {
                                     // select the color that was saved in the settings
                                      $colorPicker.val(settings.color);
                                 }
 
+                                // configure events for the dropdowns to call back to the widget
                                 $colorPicker.on("change", async function () {
                                     await reloadWidget(widgetConfigurationContext);
                                 });
@@ -73,16 +69,17 @@
                                 return WidgetHelpers.WidgetStatusHelper.Success();
                             },
                             onSave: async function() {
-                                const repos = await getRepos(VSS, Service, GitWebApi);
-                                let repo;
-                                if (repos) {
-                                    // find the repo with this name
-                                    repo = repos.find(r => r.name === $repoDropdown.val());
+                                let repoId = getSelectedRepoIdFromDropdown($repoDropdown);
+                                if (repoId == 0 || repoId == 1) { // 0 = select a repo, 1 = all repos
+                                    // do not save
+                                    console.log(`Not saving the settings because repoId is [${repoId}]`);
+                                    return WidgetHelpers.WidgetConfigurationSave.Invalid();
                                 }
+
                                 var customSettings = {
                                     data: JSON.stringify({
-                                            repo: $repoDropdown.val(),
-                                            repoId: repo.id,
+                                            repo: getSelectedRepoNameFromDropdown($repoDropdown),
+                                            repoId: repoId,
                                             color: $colorPicker.val()
                                         })
                                 };

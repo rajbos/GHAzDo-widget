@@ -43,14 +43,9 @@ async function loadWidget(widgetSettings, organization, projectName, VSS, Servic
         }
         consoleLog('alerts: ' +  JSON.stringify(alerts));
 
-        // remove %20 from the name so that it displays correctly
-        repoName = repoName.replace(/%20/g, ' '); //todo: support more of these weird characters
-
         // set the title
         var title = $('h2.ghazdo-title');
         title.text(`${repoName}`);
-        title.attr('title', repoName);
-        consoleLog(`title set to [${repoName}]`);
 
         // set the color
         const color = data.color ? data.color : '#68217a'; // default to purple
@@ -58,6 +53,7 @@ async function loadWidget(widgetSettings, organization, projectName, VSS, Servic
         widget.style.backgroundColor = `${color}`;
 
         // GHAS is only available on the SaaS version, so we can hardcode the domain
+        repoName = handleNames(repoName); // handle spaces and other characters in the repo name
         linkBase = `https://dev.azure.com/${organization}/${projectName}/_git/${repoName}/alerts`;
     }
     else {

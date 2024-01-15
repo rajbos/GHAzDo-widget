@@ -303,7 +303,8 @@ function Build {
         $json | ConvertTo-Json -Depth 10 | Set-Content .\$vsix
     }
     catch {
-        Write-Host "Error loading the version from Azure DevOps Marketplace"
+        Write-Host "Error loading the version from Azure DevOps Marketplace, check the [$$env:AZURE_DEVOPS_PAT] setting if it has the right scopes"
+        return
     }
 
     # build the task
@@ -315,6 +316,7 @@ function Build {
     Set-Location ..
 
     # package the whole extension
+    Write-Host "Packaging the extension"
     tfx extension create --manifest-globs $vsix --rev-version
 
     # get the new version number from the json file
