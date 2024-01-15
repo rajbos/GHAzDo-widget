@@ -35,7 +35,7 @@
                             const organization = webContext.account.name
                             const projectId = project.id
                             // convert project.name to url encoding
-                            const projectName = project.name.replace(/ /g, "%20").replace(/&/g, "%26")
+                            const projectName = handleNames(project.name)
 
                             consoleLog('project id: ' + projectId)
                             consoleLog('project name: ' + projectName)
