@@ -5,7 +5,17 @@
 
 version: 2
 updates:
-  - package-ecosystem: "github-actions" # See documentation for possible values
-    directory: "/" # Location of package manifests
+   # Enable version updates for actions
+  - package-ecosystem: 'github-actions'
+    # Look for `package.json` and `lock` files in the `root` directory
+    directory: '/'
+    # Check the npm registry for updates every week
     schedule:
-      interval: "monthly"
+      interval: 'monthly'
+    groups:
+      all-in-one:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
