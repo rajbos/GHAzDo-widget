@@ -50,7 +50,11 @@
                                 $("#alertTypePanel").show();
                             }
                             else if (chartType === "3") {
-                                // pie chart
+                                // alert status trend line
+                                $("#alertTypePanel").show();
+                            }
+                            else if (chartType === "4") {
+                                // grouped by repository
                                 $("#alertTypePanel").show();
                             }
                         }
@@ -60,7 +64,7 @@
                                 var settings = logWidgetSettings(widgetSettings, VSS, "Chart.2x2");
                                 const repos = await getRepos(VSS, Service, GitWebApi);
                                 if (repos) {
-                                    fillSelectRepoDropdown($repoDropdown, repos);
+                                    fillSelectRepoDropdown($repoDropdown, repos, true);
                                 }
 
                                 if (settings && settings.repoId) {
@@ -100,10 +104,21 @@
                             onSave: async function() {
                                 const customSettings = getSettings();
                                 let repoId = getSelectedRepoIdFromDropdown($repoDropdown);
-                                if (repoId == 0 || repoId == 1) { // 0 = select a repo, 1 = all repos
-                                    // do not save
-                                    console.log(`Not saving the settings because repoId is [${repoId}]`);
-                                    return WidgetHelpers.WidgetConfigurationSave.Invalid();
+                                let chartType = $chartTypeDropdown.val();
+                                
+                                // For "grouped by repository" chart, we need to load all repos
+                                if (chartType === "4") {
+                                    // Allow "All repos in this project" option for this chart type
+                                    if (repoId == 0) {
+                                        console.log(`Not saving the settings because no repository is selected`);
+                                        return WidgetHelpers.WidgetConfigurationSave.Invalid();
+                                    }
+                                } else {
+                                    // For other chart types, require a specific repo
+                                    if (repoId == 0 || repoId == 1) { // 0 = select a repo, 1 = all repos
+                                        console.log(`Not saving the settings because repoId is [${repoId}]`);
+                                        return WidgetHelpers.WidgetConfigurationSave.Invalid();
+                                    }
                                 }
 
                                 console.log(`Saving the Chart.2x2 settings with ${JSON.stringify(customSettings)}`)
@@ -135,6 +150,7 @@
                                 <option value="1">Trend line</option>
                                 <option value="2">Pie chart</option>
                                 <option value="3">Alert status trend line</option>
+                                <option value="4">Grouped by repository</option>
                             </select>
                         </td>
                     </tr>
