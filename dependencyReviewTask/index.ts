@@ -40,6 +40,7 @@ async function getAlerts(
         return null
     }
 
+    // Filter for open alerts only (states=1) to exclude closed/dismissed/fixed alerts
     const branchUrl = `https://advsec.dev.azure.com/${orgSlug}/${project.replace(" ", "%20")}/_apis/alert/repositories/${repository}/alerts?criteria.alertType=${alertType}&criteria.ref=${branchName}&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&useDatabaseProvider=true`
     tl.debug(`Calling api with url: [${branchUrl}]`)
 
