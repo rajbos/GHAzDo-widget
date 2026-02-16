@@ -54,8 +54,10 @@
                                 $("#alertTypePanel").show();
                             }
                             else if (chartType === "4") {
-                                // grouped by repository
+                                // grouped by repository - requires "All repos in this project"
                                 $("#alertTypePanel").show();
+                                // Automatically select "All repos in this project"
+                                $repoDropdown.val("1");
                             }
                         }
 

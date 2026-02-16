@@ -102,7 +102,12 @@
                                         try {
                                             const alertType = GetAlertTypeFromValue(alertTypeConfig);
                                             $title.text(`${alertType.display} Alerts grouped by repository`);
-                                            renderGroupedByRepoChart(organization, projectName, $container, chartService, alertType, widgetSettings.size);
+                                            if (repoId !== "1") {
+                                                // Show error message if not "All repos" is selected
+                                                $container.html('<p>This chart type requires "All repos in this project" to be selected in the configuration.</p>');
+                                            } else {
+                                                renderGroupedByRepoChart(organization, projectName, $container, chartService, alertType, widgetSettings.size);
+                                            }
                                         }
                                         catch (err) {
                                             consoleLog(`Error loading the grouped by repo chart: ${err}`);
