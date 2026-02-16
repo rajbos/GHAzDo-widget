@@ -187,9 +187,6 @@ async function getAlertsForRepo(organization, projectName, repoId, project, repo
     return (organization, project, repo, values);
 }
 
-// Store repository info for grouping
-let storedRepoInfo = {}
-
 async function storeAlerts(repoId, alertResult, repoName = null) {
     // Tag each alert with repository information
     if (alertResult && alertResult.value) {
@@ -207,11 +204,6 @@ async function storeAlerts(repoId, alertResult, repoName = null) {
     else {
         storedAlertData.value = storedAlertData.value.concat(alertResult.value);
         storedAlertData.count += alertResult.count;
-    }
-    
-    // Store repository info for later reference
-    if (repoName) {
-        storedRepoInfo[repoId] = repoName;
     }
 }
 
