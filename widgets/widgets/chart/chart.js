@@ -207,7 +207,7 @@ async function renderGroupedByRepoChart(organization, projectName, $container, c
         
         if (groupedData.series.length === 0) {
             consoleLog('No data available for grouped by repo chart');
-            $container.textContent = 'No data available. Please ensure alerts are loaded for all repositories in the project.';
+            $container.text('No data available. Please ensure alerts are loaded for all repositories in the project.');
             return;
         }
         

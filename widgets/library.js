@@ -380,7 +380,7 @@ function getAlertsGroupedByRepo(organization, projectName, daysToGoBack = 21, su
     const repoGroups = {};
     alerts.forEach(alert => {
         const repoId = alert.repositoryId;
-        const repoName = alert.repositoryName || `Repo ${repoId}`;
+        const repoName = alert.repositoryName || `Unknown Repository (ID: ${repoId})`;
         if (!repoGroups[repoId]) {
             repoGroups[repoId] = {
                 name: repoName,

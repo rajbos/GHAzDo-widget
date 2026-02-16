@@ -103,7 +103,7 @@
                                             $title.text(`${alertType.display} Alerts grouped by repository`);
                                             if (repoId !== "1") {
                                                 // Show error message if not "All repos" is selected
-                                                $container.html('<p>This chart type requires "All repos in this project" to be selected in the configuration.</p>');
+                                                $container.html('<p>This chart type requires "All repos in this project" to be selected. Please reconfigure the widget and select "All repos in this project" from the repository dropdown.</p>');
                                             } else {
                                                 renderGroupedByRepoChart(organization, projectName, $container, chartService, alertType, widgetSettings.size);
                                             }
