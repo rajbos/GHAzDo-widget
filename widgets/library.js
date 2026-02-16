@@ -419,9 +419,16 @@ function getAlertsGroupedByRepo(organization, projectName, daysToGoBack = 21, su
         const repoAlerts = repoGroups[repoId].alerts;
         const trendData = [];
         
-        for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + summaryBucket)) {
-            const date = new Date(d);
-            const dateStr = date.toISOString().split('T')[0];
+        // Calculate number of data points
+        const totalDays = daysToGoBack + 1;
+        const dataPoints = Math.ceil(totalDays / summaryBucket);
+        
+        for (let i = 0; i < dataPoints; i++) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + (i * summaryBucket));
+            if (currentDate > today) break;
+            
+            const dateStr = currentDate.toISOString().split('T')[0];
             const alertsOnDate = repoAlerts.filter(alert => checkAlertActiveOnDate(alert, dateStr));
             trendData.push(alertsOnDate.length);
         }
