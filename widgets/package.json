@@ -10,8 +10,8 @@
     "@types/node": "^16",
     "@types/q": "^1.5.6",
     "install": "^0.13.0",
-    "npm": "^10.1.0",
-    "tfx-cli": "^0.16.0",
+    "npm": "^11.10.0",
+    "tfx-cli": "^0.23.1",
     "vss-web-extension-sdk": "^5.141.0"
   },
   "version": "0.0.1"
