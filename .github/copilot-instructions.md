@@ -38,7 +38,7 @@ Azure Pipelines task for automated PR dependency and code scanning checks.
 GitHub Actions workflows for continuous integration and deployment.
 
 - **`ci.yml`** - Runs on PRs to main branch, builds and validates the extension
-- **`handle-versioning-accross-branches.yml`** - Manages semantic versioning across branches
+- **`handle-versioning-across-branches.yml`** - Manages semantic versioning across branches
 - **`dependency-review.yml`** - Dependency security scanning
 - **`scorecards.yml`** - OpenSSF scorecard security checks
 - **`createExampleRepos.yml`** - Creates example repositories for testing
