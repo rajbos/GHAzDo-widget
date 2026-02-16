@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   extension-versioning:
-    if: github.actor != 'dependabot[bot]
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: write
