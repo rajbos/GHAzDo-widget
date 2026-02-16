@@ -66,6 +66,7 @@
                                 var settings = logWidgetSettings(widgetSettings, VSS, "Chart.2x2");
                                 const repos = await getRepos(VSS, Service, GitWebApi);
                                 if (repos) {
+                                    // Show "All repos in this project" option for grouped by repository chart type
                                     fillSelectRepoDropdown($repoDropdown, repos, true);
                                 }
 

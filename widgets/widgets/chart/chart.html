@@ -84,6 +84,7 @@
                                             
                                             // Load alerts for each repository
                                             for (const repo of repos) {
+                                                // Only load alerts for repos with content (size > 0) to avoid unnecessary API calls
                                                 if (repo.size > 0) {
                                                     consoleLog(`Loading alerts for repo: ${repo.name}`);
                                                     await getAlertsForRepo(organization, projectName, repo.id, project, repo);

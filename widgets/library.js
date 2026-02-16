@@ -173,7 +173,9 @@ async function getAlertsForRepo(organization, projectName, repoId, project, repo
                     values.secretAlerts = secretAlerts.length;
                     values.codeAlerts = codeAlerts.length;
 
-                    await storeAlerts(repoId, alertResult, repo?.name)
+                    // Store alerts with repository information for grouping
+                    const repoName = repo && repo.name ? repo.name : null;
+                    await storeAlerts(repoId, alertResult, repoName);
 
                     return ({organization, project, repo, values});
                 }
@@ -380,7 +382,14 @@ function getAlertsGroupedByRepo(organization, projectName, daysToGoBack = 21, su
     const repoGroups = {};
     alerts.forEach(alert => {
         const repoId = alert.repositoryId;
-        const repoName = alert.repositoryName || `Unknown Repository (ID: ${repoId})`;
+        let repoName = alert.repositoryName;
+        
+        // Fallback for alerts without repository names (shouldn't normally happen)
+        if (!repoName) {
+            repoName = `Unknown Repository (ID: ${repoId})`;
+            consoleLog(`Warning: Alert found without repository name, using fallback for repo ID: ${repoId}`);
+        }
+        
         if (!repoGroups[repoId]) {
             repoGroups[repoId] = {
                 name: repoName,
