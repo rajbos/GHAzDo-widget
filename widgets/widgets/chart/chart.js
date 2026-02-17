@@ -171,3 +171,49 @@ async function renderTrendLine(organization, projectName, repoId, $container, ch
         consoleLog(`Error loading the alerts trend: ${err}`)
     }
 }
+
+async function createStackedBarChart($container, chartService, groupedData, widgetSize) {
+    consoleLog(`createStackedBarChart with ${groupedData.series.length} repositories`);
+    
+    var chartOptions = {
+        "hostOptions": {
+            "height": "290",
+            "width": getChartWidthFromWidgetSize(widgetSize)
+        },
+        "chartType": "stackedBar",
+        "series": groupedData.series,
+        "xAxis": {
+            "labelValues": groupedData.datePoints,
+            "labelFormatMode": "dateTime"
+        },
+        "specializedOptions": {
+            "showLabels": "true"
+        }
+    };
+
+    try {
+        chartService.createChart($container, chartOptions);
+    }
+    catch (err) {
+        console.log(`Error creating stacked bar chart: ${err}`);
+    }
+}
+
+async function renderGroupedByRepoChart(organization, projectName, $container, chartService, alertType, widgetSize, daysToGoBack = 21, summaryBucket = 1) {
+    consoleLog(`renderGroupedByRepoChart for alertType: [${alertType ? alertType.name : 'all'}]`);
+    try {
+        // Get the grouped data
+        const groupedData = getAlertsGroupedByRepo(organization, projectName, daysToGoBack, summaryBucket, alertType);
+        
+        if (groupedData.series.length === 0) {
+            consoleLog('No data available for grouped by repo chart');
+            $container.text('No data available. Please ensure alerts are loaded for all repositories in the project.');
+            return;
+        }
+        
+        createStackedBarChart($container, chartService, groupedData, widgetSize);
+    }
+    catch (err) {
+        consoleLog(`Error loading the grouped by repo chart: ${err}`);
+    }
+}

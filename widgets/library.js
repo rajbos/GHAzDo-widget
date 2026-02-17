@@ -173,7 +173,9 @@ async function getAlertsForRepo(organization, projectName, repoId, project, repo
                     values.secretAlerts = secretAlerts.length;
                     values.codeAlerts = codeAlerts.length;
 
-                    await storeAlerts(repoId, alertResult)
+                    // Store alerts with repository information for grouping
+                    const repoName = repo && repo.name ? repo.name : null;
+                    await storeAlerts(repoId, alertResult, repoName);
 
                     return ({organization, project, repo, values});
                 }
@@ -187,7 +189,17 @@ async function getAlertsForRepo(organization, projectName, repoId, project, repo
     return (organization, project, repo, values);
 }
 
-async function storeAlerts(repoId, alertResult) {
+async function storeAlerts(repoId, alertResult, repoName = null) {
+    // Tag each alert with repository information
+    if (alertResult && alertResult.value) {
+        alertResult.value.forEach(alert => {
+            alert.repositoryId = repoId;
+            if (repoName) {
+                alert.repositoryName = repoName;
+            }
+        });
+    }
+    
     if (!storedAlertData) {
         storedAlertData = alertResult;
     }
@@ -347,6 +359,98 @@ function getAlertsTrendLine(alerts, type, daysToGoBack = 21, summaryBucket = 1, 
     consoleLog('trendLine: ' + JSON.stringify(trendLineSimple));
     return trendLineSimple;
 }
+
+function getAlertsGroupedByRepo(organization, projectName, daysToGoBack = 21, summaryBucket = 1, alertType = null) {
+    consoleLog(`getAlertsGroupedByRepo for alertType: [${alertType ? alertType.name : 'all'}]`);
+    
+    if (!storedAlertData || !storedAlertData.value) {
+        consoleLog('No stored alert data available');
+        return {
+            repoNames: [],
+            datePoints: [],
+            series: []
+        };
+    }
+
+    // Filter alerts by type if specified
+    let alerts = storedAlertData.value;
+    if (alertType) {
+        alerts = alerts.filter(alert => alert.alertType === alertType.name);
+    }
+    
+    // Group alerts by repository
+    const repoGroups = {};
+    alerts.forEach(alert => {
+        const repoId = alert.repositoryId;
+        let repoName = alert.repositoryName;
+        
+        // Fallback for alerts without repository names (shouldn't normally happen)
+        if (!repoName) {
+            repoName = `Unknown Repository (ID: ${repoId})`;
+            consoleLog(`Warning: Alert found without repository name, using fallback for repo ID: ${repoId}`);
+        }
+        
+        if (!repoGroups[repoId]) {
+            repoGroups[repoId] = {
+                name: repoName,
+                alerts: []
+            };
+        }
+        repoGroups[repoId].alerts.push(alert);
+    });
+    
+    // Get repository names sorted alphabetically
+    const repoIds = Object.keys(repoGroups);
+    const repoNames = repoIds.map(id => repoGroups[id].name).sort();
+    
+    // Create a mapping from name to id for easy lookup
+    const nameToId = {};
+    repoIds.forEach(id => {
+        nameToId[repoGroups[id].name] = id;
+    });
+    
+    const today = new Date();
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - daysToGoBack);
+    
+    // Create series data for each repository
+    const series = [];
+    repoNames.forEach(repoName => {
+        const repoId = nameToId[repoName];
+        const repoAlerts = repoGroups[repoId].alerts;
+        const trendData = [];
+        
+        // Calculate number of data points
+        const totalDays = daysToGoBack + 1;
+        const dataPoints = Math.ceil(totalDays / summaryBucket);
+        
+        for (let i = 0; i < dataPoints; i++) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + (i * summaryBucket));
+            if (currentDate > today) break;
+            
+            const dateStr = currentDate.toISOString().split('T')[0];
+            const alertsOnDate = repoAlerts.filter(alert => checkAlertActiveOnDate(alert, dateStr));
+            trendData.push(alertsOnDate.length);
+        }
+        
+        series.push({
+            name: repoName,
+            data: trendData
+        });
+    });
+    
+    // Get date points
+    const datePoints = getDatePoints(daysToGoBack, summaryBucket);
+    
+    consoleLog(`Found ${repoNames.length} repositories with alerts`);
+    return {
+        repoNames: repoNames,
+        datePoints: datePoints,
+        series: series
+    };
+}
+
 
 function getDatePoints(daysToGoBack = 21, summaryBucket = 1) {
     const trendDates = [];

@@ -14,12 +14,14 @@
             })
 
         VSS.require([
+                    "VSS/Service",
                     "TFS/Dashboards/WidgetHelpers",
                     "Charts/Services",
                     "VSS/Context",
-                    "VSS/Authentication/Services"
+                    "VSS/Authentication/Services",
+                    "TFS/VersionControl/GitRestClient"
                 ],
-                function (WidgetHelpers, Services, context) {
+                function (Service, WidgetHelpers, Services, context, VSS_Auth_Service, GitWebApi) {
                 WidgetHelpers.IncludeWidgetStyles();
                 VSS.register("GHAzDoWidget.Chart", function () {
 
@@ -70,8 +72,47 @@
                                 repoId = data.repoId
 
                                 $container.text(`${data.repo}`)
+                                
+                                // For "grouped by repository" chart, load all repos if needed
+                                if (chartType === "4" && repoId === "1") {
+                                    consoleLog('Loading all repos for grouped by repository chart');
+                                    try {
+                                        const repos = await getRepos(VSS, Service, GitWebApi);
+                                        if (repos && repos.length > 0) {
+                                            // Clear any existing stored alert data
+                                            storedAlertData = null;
+                                            
+                                            // Load alerts for each repository
+                                            for (const repo of repos) {
+                                                // Only load alerts for repos with content (size > 0) to avoid unnecessary API calls
+                                                if (repo.size > 0) {
+                                                    consoleLog(`Loading alerts for repo: ${repo.name}`);
+                                                    await getAlertsForRepo(organization, projectName, repo.id, project, repo);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    catch (err) {
+                                        consoleLog(`Error loading repos for grouped chart: ${err}`);
+                                    }
+                                }
 
                                 switch (chartType) {
+                                    case "4":
+                                        try {
+                                            const alertType = GetAlertTypeFromValue(alertTypeConfig);
+                                            $title.text(`${alertType.display} Alerts grouped by repository`);
+                                            if (repoId !== "1") {
+                                                // Show error message if not "All repos" is selected
+                                                $container.html('<p>This chart type requires "All repos in this project" to be selected. Please reconfigure the widget and select "All repos in this project" from the repository dropdown.</p>');
+                                            } else {
+                                                renderGroupedByRepoChart(organization, projectName, $container, chartService, alertType, widgetSettings.size);
+                                            }
+                                        }
+                                        catch (err) {
+                                            consoleLog(`Error loading the grouped by repo chart: ${err}`);
+                                        }
+                                        break
                                     case "3":
                                         try {
                                             const alertType = GetAlertTypeFromValue(alertTypeConfig)
