@@ -47,6 +47,10 @@ async function loadWidget(widgetSettings, organization, projectName, VSS, Servic
         var title = $('h2.ghazdo-title');
         title.text(`${repoName}`);
 
+        // show the alert content container when configured
+        const container = $('#query-info-container');
+        container.show();
+
         // set the color
         const color = data.color ? data.color : '#68217a'; // default to purple
         const widget = document.getElementById('GHAzDo-widget');
@@ -61,6 +65,9 @@ async function loadWidget(widgetSettings, organization, projectName, VSS, Servic
         // set the tile to indicate config is needed
         var title = $('h2.ghazdo-title');
         title.text(`Configure the widget to get Security Alerts`);
+        // hide the alert content container when not configured
+        const container = $('#query-info-container');
+        container.hide();
     }
 
     let alertTypeToShow = 1
