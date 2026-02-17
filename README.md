@@ -19,5 +19,46 @@ Install the extension from the Azure DevOps marketplace: https://marketplace.vis
 
 ## How to build the package
 
-* `npm install`
-* `npm run package`
+### Prerequisites
+- Node.js (v16 or higher)
+- Install tfx-cli globally: `npm install -g tfx-cli`
+- **For publishing:** Azure DevOps PAT with **both Marketplace scopes:**
+  - **Marketplace (Acquire)** - needed to read extension info
+  - **Marketplace (Publish)** - needed to publish extension
+  - Create at: https://dev.azure.com/_usersSettings/tokens
+  - Set environment variable: `$env:AZURE_DEVOPS_PAT = "your-pat-token"`
+
+### Build Steps
+
+**Option 1: Using PowerShell script (recommended)**
+```powershell
+.\make.ps1 -command build     # Build DEV version (requires AZURE_DEVOPS_PAT)
+.\make.ps1 -command publish   # Build PROD version (requires AZURE_DEVOPS_PAT)
+```
+*Note: Both build and publish commands auto-publish to the marketplace. They require a PAT with 'Marketplace (Publish)' scope.*
+
+**Option 2: Manual build**
+```bash
+# 1. Install widget dependencies
+cd widgets
+npm install
+cd ..
+
+# 2. Build the pipeline task
+cd dependencyReviewTask
+npm run build
+cd ..
+
+# 3. Package the extension (auto-increments version)
+tfx extension create --manifest-globs vss-extension-dev.json --rev-version
+```
+*This creates a local `.vsix` file without publishing.*
+
+### Publishing to Marketplace
+
+```bash
+# Publish the created .vsix file
+tfx extension publish --vsix RobBos.GHAzDoWidget-DEV-{version}.vsix --service-url https://marketplace.visualstudio.com --token "your-pat-token"
+```
+
+Or manually upload the `.vsix` file at the [Azure DevOps Marketplace Publisher Portal](https://marketplace.visualstudio.com/manage).

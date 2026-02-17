@@ -1,7 +1,7 @@
 # load the given arguments
 param(
     [ValidateSet("provision", "build", "publish", "")]
-    [string]$command = "provision",
+    [string]$command = "",
     [int] $provisionCount = 100
 )
 
@@ -272,7 +272,10 @@ function Build {
 
     # check if $env:AZURE_DEVOPS_PAT has a value
     if ($null -eq $env:AZURE_DEVOPS_PAT) {
-        Write-Host "Environment variable AZURE_DEVOPS_PAT is not set. Please set it to a valid PAT"
+        Write-Host "Environment variable AZURE_DEVOPS_PAT is not set. Please set it to a valid PAT with BOTH scopes:"
+        Write-Host "  - Marketplace (Acquire) - needed to read extension info"
+        Write-Host "  - Marketplace (Publish) - needed to publish extension"
+        Write-Host "Create a PAT at: https://dev.azure.com/_usersSettings/tokens"
         exit
     }
 
@@ -303,14 +306,29 @@ function Build {
         $json | ConvertTo-Json -Depth 10 | Set-Content .\$vsix
     }
     catch {
-        Write-Host "Error loading the version from Azure DevOps Marketplace, check the [$$env:AZURE_DEVOPS_PAT] setting if it has the right scopes"
+        Write-Host "Error loading the version from Azure DevOps Marketplace"
+        Write-Host "Check that AZURE_DEVOPS_PAT has BOTH scopes:"
+        Write-Host "  - Marketplace (Acquire) - needed to read extension info"
+        Write-Host "  - Marketplace (Publish) - needed to publish extension"
+        Write-Host "Create a PAT at: https://dev.azure.com/_usersSettings/tokens"
+        Write-Host "Error details: $($_.Exception.Message)"
         return
+    }
+
+    # install widgets dependencies if not already installed
+    if (!(Test-Path "widgets\node_modules")) {
+        Write-Host "Installing widgets dependencies..."
+        Set-Location .\widgets
+        npm install
+        Set-Location ..
     }
 
     # build the task
     # todo: up the version number
     Set-Location .\dependencyReviewTask
-    npm run build
+    # Use --ignore-scripts to avoid native module build issues with newer Node.js versions
+    npm install --ignore-scripts
+    npx tsc -p .
 
     # go back to top level
     Set-Location ..
@@ -340,9 +358,11 @@ if ("publish" -eq $command) {
 if ("provision" -eq $command) {
     Write-Host "Provisioning the projects with repos"
 
-    # check if $env:AZURE_DEVOPS_PAT has a value
+    # check if $env:AZURE_DEVOPS_CREATE_PAT has a value
     if ($null -eq $env:AZURE_DEVOPS_CREATE_PAT) {
-        Write-Host "Environment variable AZURE_DEVOPS_CREATE_PAT is not set. Please set it to a valid PAT"
+        Write-Host "Environment variable AZURE_DEVOPS_CREATE_PAT is not set"
+        Write-Host "Please set it to a valid PAT with 'Code (Read & Write)', 'Build (Read & execute)', and 'Advanced Security (Manage & dismiss alerts)' scopes"
+        Write-Host "Create a PAT at: https://dev.azure.com/_usersSettings/tokens"
         exit
     }
 
@@ -380,6 +400,16 @@ if ("provision" -eq $command) {
 
     Set-Location $PSScriptRoot
 
+    exit
+}
+
+if ("" -eq $command) {
+    Write-Host "Please specify a command: -command build|publish|provision"
+    Write-Host ""
+    Write-Host "Examples:"
+    Write-Host "  .\make.ps1 -command build       # Build DEV version"
+    Write-Host "  .\make.ps1 -command publish     # Build PROD version"
+    Write-Host "  .\make.ps1 -command provision   # Create test repos in Azure DevOps"
     exit
 }
 
