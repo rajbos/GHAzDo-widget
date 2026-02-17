@@ -31,6 +31,7 @@
                             consoleLog("Starting to create chart")
                             var $container = $('#Chart-Container')
                             var $title = $('h2.ghazdo-title')
+                            var $loading = $('#Chart-Loading')
 
                             const webContext = VSS.getWebContext()
                             const project = webContext.project
@@ -71,7 +72,9 @@
                                 repoName = data.repo
                                 repoId = data.repoId
 
-                                $container.text(`${data.repo}`)
+                                // Show loading spinner
+                                $loading.show()
+                                $container.empty()
                                 
                                 // For "grouped by repository" chart, load all repos if needed
                                 if (chartType === "4" && repoId === "1") {
@@ -105,41 +108,50 @@
                                             if (repoId !== "1") {
                                                 // Show error message if not "All repos" is selected
                                                 $container.html('<p>This chart type requires "All repos in this project" to be selected. Please reconfigure the widget and select "All repos in this project" from the repository dropdown.</p>');
+                                                $loading.hide()
                                             } else {
-                                                renderGroupedByRepoChart(organization, projectName, $container, chartService, alertType, widgetSettings.size);
+                                                await renderGroupedByRepoChart(organization, projectName, $container, chartService, alertType, widgetSettings.size);
+                                                $loading.hide()
                                             }
                                         }
                                         catch (err) {
                                             consoleLog(`Error loading the grouped by repo chart: ${err}`);
+                                            $loading.hide()
                                         }
                                         break
                                     case "3":
                                         try {
                                             const alertType = GetAlertTypeFromValue(alertTypeConfig)
                                             $title.text(`${alertType.display} Alerts status trend`)
-                                            renderDurationChart({organization, projectName, repoId, $container, chartService, alertType, widgetSize: widgetSettings.size})
+                                            await renderDurationChart({organization, projectName, repoId, $container, chartService, alertType, widgetSize: widgetSettings.size})
+                                            $loading.hide()
                                         }
                                         catch (err) {
                                             consoleLog(`Error loading the alerts pie: ${err}`)
+                                            $loading.hide()
                                         }
                                         break
                                     case "2":
                                         try {
                                             const alertType = GetAlertTypeFromValue(alertTypeConfig);
                                             $title.text(`${alertType.display} Alerts by Severity`)
-                                            renderPieChart(organization, projectName, repoId, $container, chartService, alertType, widgetSettings.size);
+                                            await renderPieChart(organization, projectName, repoId, $container, chartService, alertType, widgetSettings.size);
+                                            $loading.hide()
                                         }
                                         catch (err) {
                                             consoleLog(`Error loading the alerts pie: ${err}`)
+                                            $loading.hide()
                                         }
                                         break
                                     default:
                                         try {
                                             $title.text(`Advanced Security alerts trend`)
-                                            renderTrendLine(organization, projectName, repoId, $container, chartService, widgetSettings.size)
+                                            await renderTrendLine(organization, projectName, repoId, $container, chartService, widgetSettings.size)
+                                            $loading.hide()
                                         }
                                         catch (err) {
                                             consoleLog(`Error loading the alerts trend: ${err}`)
+                                            $loading.hide()
                                         }
                                         break
                                 }
@@ -161,6 +173,10 @@
 
     <div class="widget">
         <h2 class="ghazdo-title">GHAzDo Chart Widget</h2>
+        <div id="Chart-Loading" class="loading-container" style="display: none;">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Loading chart data...</div>
+        </div>
         <div id="Chart-Container"></div>
     </div>
 </body>
