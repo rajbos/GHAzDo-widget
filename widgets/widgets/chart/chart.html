@@ -105,10 +105,12 @@
                                         try {
                                             const alertType = GetAlertTypeFromValue(alertTypeConfig);
                                             $title.text(`Time to Close ${alertType.display} Alerts`);
-                                            renderTimeToCloseChart(organization, projectName, repoId, $container, chartService, alertType, widgetSettings.size);
+                                            await renderTimeToCloseChart(organization, projectName, repoId, repoName, $container, chartService, alertType, widgetSettings.size);
+                                            $loading.hide()
                                         }
                                         catch (err) {
                                             consoleLog(`Error loading the time to close chart: ${err}`);
+                                            $loading.hide()
                                         }
                                         break
                                     case "4":

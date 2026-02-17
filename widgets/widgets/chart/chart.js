@@ -263,14 +263,14 @@ async function createScatterPlot($container, chartService, timeToCloseData, widg
     }
 }
 
-async function renderTimeToCloseChart(organization, projectName, repoId, $container, chartService, alertType, widgetSize) {
+async function renderTimeToCloseChart(organization, projectName, repoId, repoName, $container, chartService, alertType, widgetSize) {
     consoleLog(`renderTimeToCloseChart for alertType: [${alertType.name}]`)
     try {
         const timeToCloseData = await getTimeToCloseData(organization, projectName, repoId, alertType)
         
         if (timeToCloseData.dataPoints.length === 0) {
             consoleLog('No data available for time to close chart')
-            $container.text('No fixed alerts found. This chart shows the time taken to fix alerts.')
+            $container.text(`No fixed alerts found for ${repoName}. This chart shows the time taken to fix alerts.`)
             return
         }
         
