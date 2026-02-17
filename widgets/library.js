@@ -902,6 +902,59 @@ async function getAlertSeverityCounts(organization, projectName, repoId, alertTy
     return severityClasses
 }
 
+async function getTimeToCloseData(organization, projectName, repoId, alertType) {
+    consoleLog(`getTimeToCloseData for organization [${organization}], project [${projectName}], repo [${repoId}], alertType [${alertType.name}]`)
+    
+    try {
+        let alertResult = { count: 0, value: null }
+        if (storedAlertData) {
+            alertResult.value = storedAlertData.value.filter(alert => alert.alertType === alertType.name)
+        }
+        else {
+            // Load all alerts (not just open ones) to get fixed alerts
+            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&api-version=${apiVersion}`
+            consoleLog(`Calling url: [${url}]`)
+            alertResult = await authenticatedGet(url)
+        }
+
+        if (!alertResult || !alertResult.value || alertResult.value.length === 0) {
+            consoleLog('No alerts found for time to close calculation')
+            return { dataPoints: [], labels: [] }
+        }
+
+        consoleLog(`total alertResult count: ${alertResult.value.length} for alertType [${alertType.name}]`)
+
+        // Filter alerts that have been fixed (have a fixedDate)
+        const fixedAlerts = alertResult.value.filter(alert => alert.fixedDate)
+        consoleLog(`Fixed alerts count: ${fixedAlerts.length}`)
+
+        // Calculate time to close for each fixed alert
+        const dataPoints = []
+        const labels = []
+        
+        fixedAlerts.forEach(alert => {
+            const firstSeen = new Date(alert.firstSeenDate)
+            const fixed = new Date(alert.fixedDate)
+            const daysToClose = Math.round((fixed - firstSeen) / (1000 * 60 * 60 * 24))
+            
+            // Only include positive values (fixedDate should be after firstSeenDate)
+            if (daysToClose >= 0) {
+                dataPoints.push(daysToClose)
+                labels.push(alert.fixedDate.split('T')[0]) // Extract date part
+            }
+        })
+
+        consoleLog(`Calculated time to close for ${dataPoints.length} alerts`)
+        consoleLog(`Days to close range: min=${Math.min(...dataPoints)}, max=${Math.max(...dataPoints)}, avg=${Math.round(dataPoints.reduce((a, b) => a + b, 0) / dataPoints.length)}`)
+
+        return { dataPoints, labels }
+    }
+    catch (err) {
+        consoleLog('error in getTimeToCloseData: ' + err)
+        return { dataPoints: [], labels: [] }
+    }
+}
+
 function dumpObject(obj, showMethods = false) {
     if (showMethods) {
         return JSON.stringify(obj, Object.getOwnPropertyNames(obj), 2)

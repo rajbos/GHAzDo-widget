@@ -217,3 +217,66 @@ async function renderGroupedByRepoChart(organization, projectName, $container, c
         consoleLog(`Error loading the grouped by repo chart: ${err}`);
     }
 }
+
+async function createScatterPlot($container, chartService, timeToCloseData, widgetSize) {
+    consoleLog(`createScatterPlot with ${timeToCloseData.dataPoints.length} data points`)
+    
+    if (timeToCloseData.dataPoints.length === 0) {
+        $container.text('No fixed alerts available for time to close visualization.')
+        return
+    }
+
+    // Sort data by date (labels) to show trend over time
+    const sortedIndices = timeToCloseData.labels
+        .map((label, index) => ({ label, index }))
+        .sort((a, b) => a.label.localeCompare(b.label))
+        .map(item => item.index)
+    
+    const sortedLabels = sortedIndices.map(i => timeToCloseData.labels[i])
+    const sortedData = sortedIndices.map(i => timeToCloseData.dataPoints[i])
+
+    var chartOptions = {
+        "hostOptions": {
+            "height": "290",
+            "width": getChartWidthFromWidgetSize(widgetSize)
+        },
+        "chartType": "line",
+        "series": [{
+            "name": "Days to Close",
+            "data": sortedData
+        }],
+        "xAxis": {
+            "labelValues": sortedLabels,
+            "labelFormatMode": "dateTime"
+        },
+        "specializedOptions": {
+            "includeMarkers": "true",
+            "showLines": "false"
+        }
+    }
+
+    try {
+        chartService.createChart($container, chartOptions)
+    }
+    catch (err) {
+        console.log(`Error creating scatterplot: ${err}`)
+    }
+}
+
+async function renderTimeToCloseChart(organization, projectName, repoId, $container, chartService, alertType, widgetSize) {
+    consoleLog(`renderTimeToCloseChart for alertType: [${alertType.name}]`)
+    try {
+        const timeToCloseData = await getTimeToCloseData(organization, projectName, repoId, alertType)
+        
+        if (timeToCloseData.dataPoints.length === 0) {
+            consoleLog('No data available for time to close chart')
+            $container.text('No fixed alerts found. This chart shows the time taken to fix alerts.')
+            return
+        }
+        
+        createScatterPlot($container, chartService, timeToCloseData, widgetSize)
+    }
+    catch (err) {
+        consoleLog(`Error loading the time to close chart: ${err}`)
+    }
+}

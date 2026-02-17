@@ -98,6 +98,16 @@
                                 }
 
                                 switch (chartType) {
+                                    case "5":
+                                        try {
+                                            const alertType = GetAlertTypeFromValue(alertTypeConfig);
+                                            $title.text(`Time to Close ${alertType.display} Alerts`);
+                                            renderTimeToCloseChart(organization, projectName, repoId, $container, chartService, alertType, widgetSettings.size);
+                                        }
+                                        catch (err) {
+                                            consoleLog(`Error loading the time to close chart: ${err}`);
+                                        }
+                                        break
                                     case "4":
                                         try {
                                             const alertType = GetAlertTypeFromValue(alertTypeConfig);
