@@ -945,7 +945,9 @@ async function getTimeToCloseData(organization, projectName, repoId, alertType) 
         })
 
         consoleLog(`Calculated time to close for ${dataPoints.length} alerts`)
-        consoleLog(`Days to close range: min=${Math.min(...dataPoints)}, max=${Math.max(...dataPoints)}, avg=${Math.round(dataPoints.reduce((a, b) => a + b, 0) / dataPoints.length)}`)
+        if (dataPoints.length > 0) {
+            consoleLog(`Days to close range: min=${Math.min(...dataPoints)}, max=${Math.max(...dataPoints)}, avg=${Math.round(dataPoints.reduce((a, b) => a + b, 0) / dataPoints.length)}`)
+        }
 
         return { dataPoints, labels }
     }
