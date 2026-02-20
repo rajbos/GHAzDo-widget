@@ -217,3 +217,112 @@ async function renderGroupedByRepoChart(organization, projectName, $container, c
         consoleLog(`Error loading the grouped by repo chart: ${err}`);
     }
 }
+
+async function createScatterPlot($container, $chartInfo, chartService, timeToCloseData, widgetSize) {
+    consoleLog(`createScatterPlot with ${timeToCloseData.dataPoints.length} data points`)
+    
+    if (timeToCloseData.dataPoints.length === 0) {
+        $container.text('No fixed alerts available for time to close visualization.')
+        return
+    }
+
+    // Group data into buckets for column chart (since scatter plot is not supported)
+    const buckets = [
+        { label: '0-7 days', min: 0, max: 7, count: 0 },
+        { label: '8-30 days', min: 8, max: 30, count: 0 },
+        { label: '31-90 days', min: 31, max: 90, count: 0 },
+        { label: '91-180 days', min: 91, max: 180, count: 0 },
+        { label: '181-365 days', min: 181, max: 365, count: 0 },
+        { label: '365+ days', min: 366, max: Infinity, count: 0 }
+    ]
+
+    // Count alerts in each bucket
+    timeToCloseData.dataPoints.forEach(days => {
+        for (const bucket of buckets) {
+            if (days >= bucket.min && days <= bucket.max) {
+                bucket.count++
+                break
+            }
+        }
+    })
+
+    const labels = buckets.map(b => b.label)
+    const data = buckets.map(b => b.count)
+
+    var chartOptions = {
+        "hostOptions": {
+            "height": "250",  // Reduced from 290 to leave room for statistics below
+            "width": getChartWidthFromWidgetSize(widgetSize)
+        },
+        "chartType": "column",
+        "series": [{
+            "name": "Alerts Fixed",
+            "data": data
+        }],
+        "xAxis": {
+            "labelValues": labels
+        },
+        "yAxis": {
+            "title": "Number of Alerts"
+        },
+        "specializedOptions": {
+            "showLabels": "true"
+        }
+    }
+
+    try {
+        chartService.createChart($container, chartOptions)
+        
+        consoleLog('[STATS] Chart created, now adding statistics')
+        consoleLog('[STATS] $chartInfo exists: ' + ($chartInfo && $chartInfo.length > 0))
+        
+        // Add summary statistics to the info container (separate from chart container)
+        const avg = Math.round(timeToCloseData.dataPoints.reduce((a, b) => a + b, 0) / timeToCloseData.dataPoints.length)
+        const min = Math.min(...timeToCloseData.dataPoints)
+        const max = Math.max(...timeToCloseData.dataPoints)
+        const median = timeToCloseData.dataPoints.sort((a, b) => a - b)[Math.floor(timeToCloseData.dataPoints.length / 2)]
+        
+        // Calculate the period covered by the fixed alerts
+        const sortedDates = timeToCloseData.labels.slice().sort()
+        const oldestFixDate = sortedDates[0]
+        const newestFixDate = sortedDates[sortedDates.length - 1]
+        
+        consoleLog(`[STATS] Period: ${oldestFixDate} to ${newestFixDate}, Min: ${min}, Median: ${median}, Avg: ${avg}, Max: ${max}`)
+        
+        $chartInfo.empty()
+        $chartInfo.html(`
+            <div style="font-size: 11px; color: #333; line-height: 1.4;">
+                <div><strong>Analysis Period:</strong> Last ${timeToCloseData.daysBack} days (${timeToCloseData.analysisStartDate} to ${timeToCloseData.analysisEndDate})</div>
+                <div><strong>Stats:</strong> Min: ${min}d | Median: ${median}d | Avg: ${avg}d | Max: ${max}d | Total: ${timeToCloseData.dataPoints.length} closed</div>
+            </div>
+        `)
+        consoleLog('[STATS] Statistics appended to $chartInfo')
+    }
+    catch (err) {
+        console.log(`Error creating time to close chart: ${err}`)
+    }
+}
+
+async function renderTimeToCloseChart(organization, projectName, repoId, repoName, $container, $chartInfo, chartService, alertType, widgetSize) {
+    consoleLog(`renderTimeToCloseChart for alertType: [${alertType.name}]`)
+    try {
+        const daysBack = 90  // Show alerts closed in the last 90 days
+        const timeToCloseData = await getTimeToCloseData(organization, projectName, repoId, alertType, daysBack)
+        
+        if (timeToCloseData.dataPoints.length === 0) {
+            consoleLog('No data available for time to close chart')
+            $container.text(`No alerts closed in the last ${daysBack} days for ${repoName}. This chart shows the time taken to close alerts.`)
+            $chartInfo.html(`
+                <div style="font-size: 11px; color: #666; padding: 10px;">
+                    <strong>Analysis Period:</strong> Last ${timeToCloseData.daysBack} days (${timeToCloseData.analysisStartDate} to ${timeToCloseData.analysisEndDate})
+                </div>
+            `)
+            return
+        }
+        
+        createScatterPlot($container, $chartInfo, chartService, timeToCloseData, widgetSize)
+    }
+    catch (err) {
+        consoleLog(`Error loading the time to close chart: ${err}`)
+    }
+}

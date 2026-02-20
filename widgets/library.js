@@ -902,6 +902,112 @@ async function getAlertSeverityCounts(organization, projectName, repoId, alertTy
     return severityClasses
 }
 
+async function getTimeToCloseData(organization, projectName, repoId, alertType, daysBack = 90) {
+    consoleLog(`[TIME-TO-CLOSE] getTimeToCloseData for organization [${organization}], project [${projectName}], repo [${repoId}], alertType [${alertType.name}], daysBack [${daysBack}]`)
+    
+    try {
+        let alertResult = { count: 0, value: null }
+        if (storedAlertData) {
+            alertResult.value = storedAlertData.value.filter(alert => alert.alertType === alertType.name)
+            consoleLog(`[TIME-TO-CLOSE] Using storedAlertData, filtered to ${alertResult.value.length} alerts`)
+        }
+        else {
+            // Load all alerts (not just open ones) to get fixed/dismissed alerts
+            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&api-version=${apiVersion}`
+            consoleLog(`[TIME-TO-CLOSE] Calling API: [${url}]`)
+            alertResult = await authenticatedGet(url)
+        }
+
+        if (!alertResult || !alertResult.value || alertResult.value.length === 0) {
+            consoleLog('[TIME-TO-CLOSE] No alerts found for time to close calculation')
+            const analysisEndDate = new Date().toISOString().split('T')[0]
+            const cutoffDate = new Date()
+            cutoffDate.setDate(cutoffDate.getDate() - daysBack)
+            const analysisStartDate = cutoffDate.toISOString().split('T')[0]
+            return { dataPoints: [], labels: [], analysisStartDate, analysisEndDate, daysBack }
+        }
+
+        consoleLog(`[TIME-TO-CLOSE] Total alerts fetched: ${alertResult.value.length} for alertType [${alertType.name}]`)
+        
+        // Debug: Log sample alert structure
+        if (alertResult.value.length > 0) {
+            const sampleAlert = alertResult.value[0]
+            consoleLog(`[TIME-TO-CLOSE] Sample alert properties: fixedDate=${sampleAlert.fixedDate}, dismissal=${sampleAlert.dismissal ? JSON.stringify(sampleAlert.dismissal) : 'null'}`)
+        }
+
+        // Filter alerts that have been fixed (have a fixedDate)
+        const fixedAlerts = alertResult.value.filter(alert => alert.fixedDate)
+        consoleLog(`[TIME-TO-CLOSE] Fixed alerts (with fixedDate): ${fixedAlerts.length}`)
+        
+        // Filter alerts that have been dismissed (have dismissal.requestedOn)
+        const dismissedAlerts = alertResult.value.filter(alert => alert.dismissal && alert.dismissal.requestedOn)
+        consoleLog(`[TIME-TO-CLOSE] Dismissed alerts (with dismissal.requestedOn): ${dismissedAlerts.length}`)
+        
+        // Combine both fixed and dismissed alerts for time to close calculation
+        const closedAlerts = [...fixedAlerts, ...dismissedAlerts.filter(dismissed => !dismissed.fixedDate)]
+        consoleLog(`[TIME-TO-CLOSE] Total closed alerts (fixed + dismissed): ${closedAlerts.length}`)
+
+        // Filter to only include alerts closed within the specified time window
+        const cutoffDate = new Date()
+        cutoffDate.setDate(cutoffDate.getDate() - daysBack)
+        const analysisStartDate = cutoffDate.toISOString().split('T')[0]
+        const analysisEndDate = new Date().toISOString().split('T')[0]
+        
+        const recentlyClosedAlerts = closedAlerts.filter(alert => {
+            let closedDate
+            if (alert.fixedDate) {
+                closedDate = new Date(alert.fixedDate)
+            } else if (alert.dismissal && alert.dismissal.requestedOn) {
+                closedDate = new Date(alert.dismissal.requestedOn)
+            }
+            return closedDate && closedDate >= cutoffDate
+        })
+        
+        consoleLog(`[TIME-TO-CLOSE] Alerts closed in last ${daysBack} days: ${recentlyClosedAlerts.length} (from ${closedAlerts.length} total)`)
+
+        // Calculate time to close for each closed alert
+        const dataPoints = []
+        const labels = []
+        
+        recentlyClosedAlerts.forEach(alert => {
+            const firstSeen = new Date(alert.firstSeenDate)
+            let closedDate
+            
+            // Use fixedDate if available, otherwise use dismissal date
+            if (alert.fixedDate) {
+                closedDate = new Date(alert.fixedDate)
+            } else if (alert.dismissal && alert.dismissal.requestedOn) {
+                closedDate = new Date(alert.dismissal.requestedOn)
+            }
+            
+            if (closedDate) {
+                const daysToClose = Math.round((closedDate - firstSeen) / (1000 * 60 * 60 * 24))
+                
+                // Only include positive values (closedDate should be after firstSeenDate)
+                if (daysToClose >= 0) {
+                    dataPoints.push(daysToClose)
+                    labels.push((alert.fixedDate || alert.dismissal.requestedOn).split('T')[0]) // Extract date part
+                }
+            }
+        })
+
+        consoleLog(`[TIME-TO-CLOSE] Calculated time to close for ${dataPoints.length} alerts`)
+        if (dataPoints.length > 0) {
+            consoleLog(`[TIME-TO-CLOSE] Days to close range: min=${Math.min(...dataPoints)}, max=${Math.max(...dataPoints)}, avg=${Math.round(dataPoints.reduce((a, b) => a + b, 0) / dataPoints.length)}`)
+        }
+
+        return { dataPoints, labels, analysisStartDate, analysisEndDate, daysBack }
+    }
+    catch (err) {
+        consoleLog('[TIME-TO-CLOSE] Error in getTimeToCloseData: ' + err)
+        const analysisEndDate = new Date().toISOString().split('T')[0]
+        const cutoffDate = new Date()
+        cutoffDate.setDate(cutoffDate.getDate() - (daysBack || 90))
+        const analysisStartDate = cutoffDate.toISOString().split('T')[0]
+        return { dataPoints: [], labels: [], analysisStartDate, analysisEndDate, daysBack: daysBack || 90 }
+    }
+}
+
 function dumpObject(obj, showMethods = false) {
     if (showMethods) {
         return JSON.stringify(obj, Object.getOwnPropertyNames(obj), 2)
