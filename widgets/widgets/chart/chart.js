@@ -326,10 +326,15 @@ async function renderTimeToCloseChart(organization, projectName, repoId, repoNam
         
         if (timeToCloseData.dataPoints.length === 0) {
             consoleLog('No data available for time to close chart')
-            $container.text(`No alerts closed in the last ${daysBack} days for ${repoName}. This chart shows the time taken to close alerts.`)
+            $container.html(`
+                <div style="display: flex; align-items: center; justify-content: center; height: 250px; color: #666; text-align: center; padding: 20px;">
+                    <div>No alerts closed in the last ${daysBack} days for ${repoName}.<br>This chart shows the time taken to close alerts.</div>
+                </div>
+            `)
             $chartInfo.html(`
-                <div style="font-size: 11px; color: #666; padding: 10px;">
-                    <strong>Analysis Period:</strong> Last ${timeToCloseData.daysBack} days (${timeToCloseData.analysisStartDate} to ${timeToCloseData.analysisEndDate})
+                <div style="font-size: 11px; color: #333; line-height: 1.4;">
+                    <div><strong>Analysis Period:</strong> Last ${timeToCloseData.daysBack} days (${timeToCloseData.analysisStartDate} to ${timeToCloseData.analysisEndDate})</div>
+                    <div style="margin-top: 5px; color: #666;">No closed alerts found in this period.</div>
                 </div>
             `)
             return
