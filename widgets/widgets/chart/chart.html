@@ -104,8 +104,9 @@
                                     case "5":
                                         try {
                                             const alertType = GetAlertTypeFromValue(alertTypeConfig);
-                                            $title.text(`Time to Close ${alertType.display} Alerts`);
-                                            await renderTimeToCloseChart(organization, projectName, repoId, repoName, $container, chartService, alertType, widgetSettings.size);
+                                            $title.text(`Time to Close Distribution - ${alertType.display} alerts`);
+                                            const $chartInfo = $('#Chart-Info');
+                                            await renderTimeToCloseChart(organization, projectName, repoId, repoName, $container, $chartInfo, chartService, alertType, widgetSettings.size);
                                             $loading.hide()
                                         }
                                         catch (err) {
@@ -116,7 +117,7 @@
                                     case "4":
                                         try {
                                             const alertType = GetAlertTypeFromValue(alertTypeConfig);
-                                            $title.text(`${alertType.display} Alerts grouped by repository`);
+                                            $title.text(`${alertType.display} alerts grouped by repository`);
                                             if (repoId !== "1") {
                                                 // Show error message if not "All repos" is selected
                                                 $container.html('<p>This chart type requires "All repos in this project" to be selected. Please reconfigure the widget and select "All repos in this project" from the repository dropdown.</p>');
@@ -134,7 +135,7 @@
                                     case "3":
                                         try {
                                             const alertType = GetAlertTypeFromValue(alertTypeConfig)
-                                            $title.text(`${alertType.display} Alerts status trend`)
+                                            $title.text(`${alertType.display} alerts status trend`)
                                             await renderDurationChart({organization, projectName, repoId, $container, chartService, alertType, widgetSize: widgetSettings.size})
                                             $loading.hide()
                                         }
@@ -146,7 +147,7 @@
                                     case "2":
                                         try {
                                             const alertType = GetAlertTypeFromValue(alertTypeConfig);
-                                            $title.text(`${alertType.display} Alerts by Severity`)
+                                            $title.text(`${alertType.display} alerts by severity`)
                                             await renderPieChart(organization, projectName, repoId, $container, chartService, alertType, widgetSettings.size);
                                             $loading.hide()
                                         }
@@ -190,6 +191,7 @@
             <div class="loading-text">Loading chart data...</div>
         </div>
         <div id="Chart-Container"></div>
+        <div id="Chart-Info" style="padding: 5px 10px; background-color: #f5f5f5; border-top: 1px solid #ddd;"></div>
     </div>
 </body>
 </html>
