@@ -33,6 +33,18 @@ async function createCharts({chartService, projectName, organization}) {
         titleName: "TitleOverallCodeScanningPie"
     }
     await createHubChart({chartService, organization, projectName, data: codeScanningPieData});
+
+    // load the overall secret confidence chart
+    const secretPieData = {
+        chartType: "2",
+        alertType: AlertType.SECRET.value.toString(),
+        repo: "All repos",
+        repoId: "-1",
+        containerName: "ChartContainerOverallSecretPie",
+        titleName: "TitleOverallSecretPie",
+        useConfidence: true
+    }
+    await createHubChart({chartService, organization, projectName, data: secretPieData});
 }
 
 async function createHubChart({chartService, organization, projectName, data}) {
@@ -88,10 +100,20 @@ async function createHubChart({chartService, organization, projectName, data}) {
             case "2":
                 try {
                     const alertType = GetAlertTypeFromValue(alertTypeConfig)
-                    if (titleElement) {
-                        titleElement.textContent = `${alertType.display} alerts by severity`
+                    if (data.useConfidence) {
+                        // Use confidence levels for secret alerts
+                        if (titleElement) {
+                            titleElement.textContent = `${alertType.display} alerts by confidence`
+                        }
+                        await renderConfidencePieChart(organization, projectName, repoId, containerElement, chartService, alertType, chartSize)
                     }
-                    await renderPieChart(organization, projectName, repoId, containerElement, chartService, alertType, chartSize)
+                    else {
+                        // Use severity levels for dependency and code scanning alerts
+                        if (titleElement) {
+                            titleElement.textContent = `${alertType.display} alerts by severity`
+                        }
+                        await renderPieChart(organization, projectName, repoId, containerElement, chartService, alertType, chartSize)
+                    }
                 }
                 catch (err) {
                     consoleLog(`Error loading the alerts pie: ${err}`)
