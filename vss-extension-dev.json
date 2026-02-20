@@ -1,7 +1,11 @@
 {
   "manifestVersion": 1,
   "id": "GHAzDoWidget-DEV",
+<<<<<<< copilot/add-scatterplot-metric-visualization
   "version": "0.2.455",
+=======
+  "version": "0.2.443",
+>>>>>>> main
   "public": false,
   "name": "Advanced Security dashboard Widgets [DEV]",
   "description": "[DEV] GitHub Advanced Security for Azure DevOps dashboard widgets",
