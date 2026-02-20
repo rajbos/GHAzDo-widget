@@ -7,6 +7,9 @@ Install from the marketplace: https://marketplace.visualstudio.com/items?itemNam
 * Split it into three separate widgets with just the single value you scan for (1x1 or 2x1)
 * Show a trend line of all alerts in the last 3 weeks (2x2,3x2,4x2)
 * Show a pie chart with the distribution of alerts based on the severity level (2x2,3x2,4x2)
+* Show alert status trend line (open/dismissed/fixed) over time (2x2,3x2,4x2)
+* Show alerts grouped by repository (2x2,3x2,4x2)
+* **NEW:** Show time to close scatterplot - visualize how long it takes to fix alerts and identify outliers (2x2,3x2,4x2)
 
 ![Screenshot of the all the widgets with alert count for dependencies, secrets, and code scanning](/img/overview_600.png)  
 

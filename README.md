@@ -8,6 +8,10 @@ Install the extension from the Azure DevOps marketplace: https://marketplace.vis
 * Show all three alert counts in one widget in 2 by 1 layout
 * Split it into three separate widgets with just the single value you scan for (1x1 or 2x1)
 * Show a trend line of all alerts in the last 3 weeks (2x2,3x2,4x2)
+* Show a pie chart of alerts by severity (2x2,3x2,4x2)
+* Show alert status trend line (open/dismissed/fixed) (2x2,3x2,4x2)
+* Show alerts grouped by repository (2x2,3x2,4x2)
+* **NEW:** Show time to close scatterplot - visualize how long it takes to fix alerts (2x2,3x2,4x2)
 
 ![Screenshot of the widget showing the repository name and the alert count for dependencies, secrets, and code scanning](/img/overview_600.png)
 
