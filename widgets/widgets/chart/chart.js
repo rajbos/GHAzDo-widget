@@ -51,7 +51,9 @@ async function createPieChart($container, chartService, alertSeverityCount, widg
     const labels = []
     for (const index in alertSeverityCount) {
         const item = alertSeverityCount[index]
-        labels.push(item.severity)
+        // Support both severity and confidence fields
+        const label = item.severity || item.confidence
+        labels.push(label)
         data.push(item.count)
     }
 
@@ -140,6 +142,19 @@ async function renderDurationChart({organization, projectName, repoId, $containe
     }
     catch (err) {
         consoleLog(`Error loading the alerts trend: ${err}`)
+    }
+}
+
+async function renderConfidencePieChart(organization, projectName, repoId, $container, chartService, alertType, widgetSize) {
+    consoleLog('renderConfidencePieChart')
+    try {
+        // get the confidence data for alerts first
+        const alertConfidenceCount = await getAlertConfidenceCounts(organization, projectName, repoId, alertType)
+
+        createPieChart($container, chartService, alertConfidenceCount, widgetSize)
+    }
+    catch (err) {
+        consoleLog(`Error loading the alerts confidence pie: ${err}`)
     }
 }
 

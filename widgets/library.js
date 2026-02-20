@@ -902,6 +902,54 @@ async function getAlertSeverityCounts(organization, projectName, repoId, alertTy
     return severityClasses
 }
 
+async function getAlertConfidenceCounts(organization, projectName, repoId, alertType) {
+
+    let confidenceClasses = [
+        { confidence: "high", count: 0 },
+        { confidence: "medium", count: 0 },
+        { confidence: "low", count: 0}
+    ]
+
+    try {
+        let alertResult = { count: 0, value: null}
+        if (storedAlertData) {
+            alertResult.value = storedAlertData.value.filter(alert => alert.alertType === alertType.name)
+        }
+        else {
+            // todo: filter on alertType
+            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=${apiVersion}`
+            //consoleLog(`Calling url: [${url}]`);
+            alertResult = await authenticatedGet(url)
+        }
+
+        if (alertResult && alertResult.value.length) {
+            //consoleLog('alertResult: ' + JSON.stringify(alertResult));
+            consoleLog(`total alertResult count: ${alertResult.value.length} for alertType [${alertType.name}]`)
+
+            // group the alerts based on the confidence
+            try {
+                consoleLog(`confidenceClasses.length: [${confidenceClasses.length}]`)
+
+                for (let index in confidenceClasses) {
+                    let confidenceClass = confidenceClasses[index];
+                    const confidenceAlertCount = alertResult.value.filter(alert => alert.confidence === confidenceClass.confidence)
+                    consoleLog(`confidenceClass [${confidenceClass.confidence}] has [${confidenceAlertCount.length}] alerts`)
+                    confidenceClass.count = confidenceAlertCount.length
+                }
+            }
+            catch (err) {
+                consoleLog('error in grouping the alerts: ' + err)
+            }
+
+            consoleLog('confidenceClasses summarized: ' + JSON.stringify(confidenceClasses))
+        }
+    }
+    catch (err) {
+        consoleLog('error in calling the advec api: ' + err)
+    }
+    return confidenceClasses
+}
+
 async function getTimeToCloseData(organization, projectName, repoId, alertType, daysBack = 90) {
     consoleLog(`[TIME-TO-CLOSE] getTimeToCloseData for organization [${organization}], project [${projectName}], repo [${repoId}], alertType [${alertType.name}], daysBack [${daysBack}]`)
     
