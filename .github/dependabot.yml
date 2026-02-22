@@ -19,3 +19,21 @@ updates:
         update-types:
           - "minor"
           - "patch"
+  
+  # Enable version updates for npm packages (tfx-cli)
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'monthly'
+  
+  # Enable version updates for widget npm packages
+  - package-ecosystem: 'npm'
+    directory: '/widgets'
+    schedule:
+      interval: 'monthly'
+  
+  # Enable version updates for dependency review task npm packages
+  - package-ecosystem: 'npm'
+    directory: '/dependencyReviewTask'
+    schedule:
+      interval: 'monthly'
