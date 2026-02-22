@@ -4,7 +4,7 @@
   "description": "GitHub Advanced Security for Azure DevOps Widget",
   "private": true,
   "devDependencies": {
-    "tfx-cli": "^0.22.1"
+    "tfx-cli": "^0.23.1"
   },
   "scripts": {
     "install-tfx": "npm install"
