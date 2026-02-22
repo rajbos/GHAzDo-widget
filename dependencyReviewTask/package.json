@@ -3,7 +3,7 @@
         "build": "npm install && tsc -p ."
     },
     "dependencies": {
-        "azure-devops-node-api": "^12.1.0",
+        "azure-devops-node-api": "^15.1.2",
         "azure-pipelines-task-lib": "^5.2.6"
     },
     "devDependencies": {
