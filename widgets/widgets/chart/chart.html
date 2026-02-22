@@ -101,6 +101,18 @@
                                 }
 
                                 switch (chartType) {
+                                    case "6":
+                                        try {
+                                            const alertType = GetAlertTypeFromValue(alertTypeConfig);
+                                            $title.text(`${alertType.display} alerts by confidence`);
+                                            await renderConfidencePieChart(organization, projectName, repoId, $container, chartService, alertType, widgetSettings.size);
+                                            $loading.hide()
+                                        }
+                                        catch (err) {
+                                            consoleLog(`Error loading the confidence pie chart: ${err}`);
+                                            $loading.hide()
+                                        }
+                                        break
                                     case "5":
                                         try {
                                             const alertType = GetAlertTypeFromValue(alertTypeConfig);

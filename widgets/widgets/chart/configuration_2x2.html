@@ -63,6 +63,10 @@
                                 // time to close scatterplot
                                 $("#alertTypePanel").show();
                             }
+                            else if (chartType === "6") {
+                                // confidence pie chart
+                                $("#alertTypePanel").show();
+                            }
                         }
 
                         return {
@@ -159,6 +163,7 @@
                                 <option value="3">Alert status trend line</option>
                                 <option value="4">Grouped by repository</option>
                                 <option value="5">Time to close scatterplot</option>
+                                <option value="6">Confidence pie chart</option>
                             </select>
                         </td>
                     </tr>
