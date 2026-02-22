@@ -7,7 +7,7 @@
     "publish-explain": "go to https://marketplace.visualstudio.com/manage and publish manually"
   },
   "devDependencies": {
-    "@types/node": "^16",
+    "@types/node": "^25",
     "@types/q": "^1.5.8",
     "install": "^0.13.0",
     "npm": "^11.10.1",
