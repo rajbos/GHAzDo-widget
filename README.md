@@ -25,7 +25,7 @@ Install the extension from the Azure DevOps marketplace: https://marketplace.vis
 
 ### Prerequisites
 - Node.js (v16 or higher)
-- Install tfx-cli globally: `npm install -g tfx-cli`
+- Install dependencies: `npm install` (this will install the pinned version of tfx-cli)
 - **For publishing:** Azure DevOps PAT with **both Marketplace scopes:**
   - **Marketplace (Acquire)** - needed to read extension info
   - **Marketplace (Publish)** - needed to publish extension
