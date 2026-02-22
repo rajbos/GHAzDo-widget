@@ -1,0 +1,19 @@
+# Exclude SVG files that cause extension validation to fail
+**/node_modules/**/doc/**
+**/node_modules/**/fonts/**/*.svg
+**/node_modules/**/*.svg
+
+# Exclude other unnecessary files from node_modules
+**/node_modules/**/test/**
+**/node_modules/**/tests/**
+**/node_modules/**/*.md
+**/node_modules/**/*.markdown
+**/node_modules/**/LICENSE
+**/node_modules/**/CHANGELOG*
+**/node_modules/**/.github/**
+
+# Development files
+.vscode/**
+.git/**
+*.log
+.DS_Store
