@@ -1,0 +1,12 @@
+{
+  "name": "ghazdo-widget",
+  "version": "1.0.0",
+  "description": "GitHub Advanced Security for Azure DevOps Widget",
+  "private": true,
+  "devDependencies": {
+    "tfx-cli": "0.23.1"
+  },
+  "scripts": {
+    "install-tfx": "npm install"
+  }
+}

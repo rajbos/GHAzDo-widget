@@ -25,7 +25,8 @@ jobs:
 
       - name: Install tfx extension
         run: |
-          npm install -g tfx-cli
+          npm install
+          npm install -g tfx-cli@$(node -p "require('./package.json').devDependencies['tfx-cli']")
 
       - name: Build the extension
         shell: pwsh
