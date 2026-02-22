@@ -34,10 +34,8 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install tfx extension
-        run: |
-          npm install
-          npm install -g tfx-cli@$(node -p "require('./package.json').devDependencies['tfx-cli']")
+      - name: Install dependencies
+        run: npm install
 
       - name: Get highest version number accross all branches
         id: get-version
@@ -46,7 +44,7 @@ jobs:
           AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT}}
         run: |
           # get the last updated version for this extension from the server
-          $output = $(tfx extension show --token $env:AZURE_DEVOPS_PAT --vsix $vsix --publisher "RobBos" --extension-id "GHAzDoWidget-DEV" --output json | ConvertFrom-Json)
+          $output = $(npx tfx extension show --token $env:AZURE_DEVOPS_PAT --vsix $vsix --publisher "RobBos" --extension-id "GHAzDoWidget-DEV" --output json | ConvertFrom-Json)
           if ($null -eq $output) {
             Write-Host "No versions found on the server"
             exit 1

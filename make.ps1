@@ -296,7 +296,7 @@ function Build {
 
     # get the last updated version for this extension from the server to make sure we are rolling forward
     try {
-        $output = $(tfx extension show --token $env:AZURE_DEVOPS_PAT --vsix $vsix --publisher "RobBos" --extension-id $extensionId --output json | ConvertFrom-Json)
+        $output = $(npx tfx extension show --token $env:AZURE_DEVOPS_PAT --vsix $vsix --publisher "RobBos" --extension-id $extensionId --output json | ConvertFrom-Json)
         $lastVersion = ($output.versions | Sort-Object -Property lastUpdated -Descending)[0]
         Write-Host "Last version: [$($lastVersion.version)] from server"
         # overwrite the version in the json file
@@ -335,14 +335,14 @@ function Build {
 
     # package the whole extension
     Write-Host "Packaging the extension"
-    tfx extension create --manifest-globs $vsix --rev-version
+    npx tfx extension create --manifest-globs $vsix --rev-version
 
     # get the new version number from the json file
     $json = Get-Content .\$vsix | ConvertFrom-Json
     $visx = "$extensionPrefix$($json.version).vsix"
 
     Write-Host "Publishing [$visx]"
-    tfx extension publish --vsix $visx --service-url https://marketplace.visualstudio.com --token "$($env:AZURE_DEVOPS_PAT)"
+    npx tfx extension publish --vsix $visx --service-url https://marketplace.visualstudio.com --token "$($env:AZURE_DEVOPS_PAT)"
 }
 
 if ("build" -eq $command) {
