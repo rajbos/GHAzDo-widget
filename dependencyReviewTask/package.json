@@ -7,7 +7,7 @@
         "azure-pipelines-task-lib": "^5.2.6"
     },
     "devDependencies": {
-        "@types/node": "^20",
+        "@types/node": "^25",
         "@types/q": "^1.5.6",
         "typescript": "^5.9.3"
     }
