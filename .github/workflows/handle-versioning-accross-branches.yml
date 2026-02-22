@@ -35,7 +35,7 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Get highest version number accross all branches
         id: get-version
