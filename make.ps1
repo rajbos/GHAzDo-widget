@@ -330,8 +330,27 @@ function Build {
     npm install --ignore-scripts
     npx tsc -p .
 
+    # remove devDependencies that are not needed at runtime (e.g. typescript)
+    npm prune --omit=dev
+
     # go back to top level
     Set-Location ..
+
+    # clean up node_modules to reduce warnings and package size
+    $taskNodeModules = ".\dependencyReviewTask\node_modules"
+    # remove .bin folder (symlinks without extensions cause warnings)
+    if (Test-Path "$taskNodeModules\.bin") { Remove-Item -Path "$taskNodeModules\.bin" -Recurse -Force }
+    # remove all bin folders inside packages (extensionless files cause warnings)
+    Get-ChildItem -Path $taskNodeModules -Directory -Recurse -Filter "bin" | Where-Object {
+        # only remove bin folders that contain extensionless files
+        Get-ChildItem -Path $_.FullName -File | Where-Object { $_.Extension -eq "" }
+    } | ForEach-Object { Remove-Item -Path $_.FullName -Recurse -Force }
+    # remove SVG files that cause marketplace validation to fail
+    Get-ChildItem -Path $taskNodeModules -Recurse -Filter *.svg -ErrorAction SilentlyContinue | Remove-Item -Force
+    # remove files with extensions that tfx-cli cannot determine content-type for
+    @("*.markdown", "*.yml", "*.cmd", "*.iml", "*.bnf", "*.resjson") | ForEach-Object {
+        Get-ChildItem -Path $taskNodeModules -Recurse -Filter $_ -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
+    }
 
     # package the whole extension
     Write-Host "Packaging the extension"
