@@ -32,7 +32,7 @@
         }
     ],
     "execution": {
-        "Node20": {
+        "Node24": {
             "target": "index.js"
         }
     }
