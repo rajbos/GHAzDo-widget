@@ -37,6 +37,15 @@ jobs:
           npm prune --omit=dev
         working-directory: dependencyReviewTask
 
+      - name: Clean up node_modules before packaging
+        run: |
+          # remove .bin folder (symlinks/extensionless files cause warnings)
+          rm -rf dependencyReviewTask/node_modules/.bin
+          # remove SVG files that cause marketplace validation to fail
+          find dependencyReviewTask/node_modules -name "*.svg" -delete
+          # remove other file types that cause content-type issues
+          find dependencyReviewTask/node_modules \( -name "*.markdown" -o -name "*.cmd" -o -name "*.iml" -o -name "*.bnf" -o -name "*.resjson" \) -delete
+
       - name: Publish to Azure DevOps Marketplace
         id: publish
         uses: jessehouwing/azdo-marketplace@430d9d20b8f0e2343cd0d7537b202cc3eb0dce63 # v6.1.2
