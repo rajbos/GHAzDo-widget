@@ -7,6 +7,7 @@
     "tfx-cli": "^0.23.1"
   },
   "scripts": {
-    "install-tfx": "npm install"
+    "install-tfx": "npm install",
+    "test": "cd widgets && npx vitest run && cd ../dependencyReviewTask && npx vitest run"
   }
 }

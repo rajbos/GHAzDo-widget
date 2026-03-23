@@ -41,7 +41,7 @@ function authenticatedGet(url) {
             }
 
             // only show the response headers on httpOk
-            if (response.status == !200 && response.status == !400 && response.status == !403) {
+            if (response.status !== 200 && response.status !== 400 && response.status !== 403) {
                 console.log(`Headers for [${url}] with status [${response.status}]:`)
                 response.headers.forEach((value, name) => console.log(`${name}: ${value}`))
             }
@@ -142,7 +142,7 @@ async function getAlertsForRepo(organization, projectName, repoId, project, repo
 
     try {
         // first check if GHAzDo is enabled or not
-        url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/management/repositories/${repoId}/enablement?api-version=${apiVersion}`;
+        let url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/management/repositories/${repoId}/enablement?api-version=${apiVersion}`;
         const featuresEnabledResult = await authenticatedGet(url);
 
         //authenticatedGet(url).then(featuresEnabledResult => {
@@ -186,7 +186,7 @@ async function getAlertsForRepo(organization, projectName, repoId, project, repo
     catch (err) {
         consoleLog('error in calling the advec api: ' + err);
     }
-    return (organization, project, repo, values);
+    return {organization, project, repo, values};
 }
 
 async function storeAlerts(repoId, alertResult, repoName = null) {
@@ -212,7 +212,7 @@ async function storeAlerts(repoId, alertResult, repoName = null) {
 async function getAlertsTrendLines(organization, projectName, repoId, daysToGoBack, summaryBucket, alertType, overviewType = false, showClosed = false) {
     consoleLog(`getAlertsTrend for organization [${organization}], project [${projectName}], repo [${repoId}]`)
     try {
-        alertResult = null
+        let alertResult = null
         if (repoId === '-1') {
             // load data from previously stored info
             consoleLog('loading data from previously stored info')
@@ -220,7 +220,7 @@ async function getAlertsTrendLines(organization, projectName, repoId, daysToGoBa
         }
         else {
             // load the alerts for the given repo
-            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&api-version=${apiVersion}`
+            const url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&api-version=${apiVersion}`
             consoleLog(`Calling url: [${url}]`)
             alertResult = await authenticatedGet(url)
             //consoleLog('alertResult: ' + JSON.stringify(alertResult))
@@ -257,7 +257,7 @@ async function getAlertsTrendLines(organization, projectName, repoId, daysToGoBa
             }
         }
         else {
-            consoleLog(`Loading alerts trend lines for alert type: [$alertType.name}]`)
+            consoleLog(`Loading alerts trend lines for alert type: [${alertType.name}]`)
             // filter the alerts based on the alertType
             const alerts = alertResult.value.filter(alert => alert.alertType === alertType.name)
             // create a trend line over the last 3 weeks for number of open alerts
@@ -500,14 +500,6 @@ async function getSavedDocument(VSS, documentCollection, documentId) {
 }
 
 async function saveDocument(VSS, documentCollection, documentId, data) {
-
-    try {
-        //delete document in case it exists, there is an issue with setDocument it seems
-        removeDocument(VSS, documentCollection, documentId);
-    }
-    catch (err) {
-        console.log(`Tried deleting the document with Id [${documentId}]: ${JSON.stringify(err)}`);
-    }
 
     const dataService = await VSS.getService(VSS.ServiceIds.ExtensionData);
     try {
@@ -869,7 +861,7 @@ async function getAlertSeverityCounts(organization, projectName, repoId, alertTy
         }
         else {
             // todo: filter on alertType
-            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=${apiVersion}`
+            const url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=${apiVersion}`
             //consoleLog(`Calling url: [${url}]`);
             alertResult = await authenticatedGet(url)
         }
@@ -917,7 +909,7 @@ async function getAlertConfidenceCounts(organization, projectName, repoId, alert
         }
         else {
             // todo: filter on alertType
-            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=${apiVersion}`
+            const url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&criteria.states=1&api-version=${apiVersion}`
             //consoleLog(`Calling url: [${url}]`);
             alertResult = await authenticatedGet(url)
         }
@@ -961,7 +953,7 @@ async function getTimeToCloseData(organization, projectName, repoId, alertType, 
         }
         else {
             // Load all alerts (not just open ones) to get fixed/dismissed alerts
-            url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&api-version=${apiVersion}`
+            const url = `https://advsec.dev.azure.com/${organization}/${projectName}/_apis/${areaName}/repositories/${repoId}/alerts?top=5000&criteria.onlyDefaultBranchAlerts=true&criteria.alertType=${alertType.value}&api-version=${apiVersion}`
             consoleLog(`[TIME-TO-CLOSE] Calling API: [${url}]`)
             alertResult = await authenticatedGet(url)
         }
@@ -1061,4 +1053,43 @@ function dumpObject(obj, showMethods = false) {
         return JSON.stringify(obj, Object.getOwnPropertyNames(obj), 2)
     }
     return JSON.stringify(obj, null, 2)
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        AlertType,
+        GetAlertTypeFromValue,
+        checkAlertActiveOnDate,
+        checkAlertDismissedOnDate,
+        checkAlertFixedOnDate,
+        getAlertsTrendLine,
+        getDatePoints,
+        getAlerts,
+        getAlertsForRepo,
+        getAlertsTrendLines,
+        getAlertsGroupedByRepo,
+        getAlertSeverityCounts,
+        getAlertConfidenceCounts,
+        getTimeToCloseData,
+        handleNames,
+        dumpObject,
+        fillSelectRepoDropdown,
+        getSelectedRepoIdFromDropdown,
+        getSelectedRepoNameFromDropdown,
+        storeAlerts,
+        consoleLog,
+        logWidgetSettings,
+        getWidgetId,
+        getSavedDocument,
+        saveDocument,
+        removeDocument,
+        getProjects,
+        getRepos,
+        loadAllAlertsFromAllRepos,
+        authenticatedGet,
+        getAuthHeader,
+        showCallStatus,
+        showRepoInfo,
+        showAlertInfo,
+    }
 }

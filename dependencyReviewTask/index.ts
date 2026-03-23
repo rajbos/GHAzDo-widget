@@ -1,7 +1,7 @@
 import * as tl from "azure-pipelines-task-lib/task";
 import { getHandlerFromToken, WebApi } from "azure-devops-node-api";
 
-function getSystemAccessToken() : string {
+export function getSystemAccessToken() : string {
     tl.debug('Getting credentials for local feeds');
     const auth = tl.getEndpointAuthorization('SYSTEMVSSCONNECTION', false);
     if (auth.scheme === 'OAuth') {
@@ -26,7 +26,7 @@ interface IResponse {
     result: IResult;
 }
 
-async function getAlerts(
+export async function getAlerts(
     connection: WebApi,
     orgSlug: string,
     project: string,
@@ -62,7 +62,7 @@ async function getAlerts(
     return branchResponse
 }
 
-async function run() {
+export async function run() {
     try {
         // test to see if this build was triggered with a PR context
         const buildReason = tl.getVariable('Build.Reason')
@@ -93,7 +93,7 @@ async function run() {
 
         let alertType = 0
         let errorString = ""
-        console.log(`Retrieving alerts with token: [${token}], organization: [${organization}], orgSlug: [${orgSlug}], project: [${project}], sourceBranchName: [${sourceBranchName}], targetBranchName: [${targetBranchName}]`)
+        console.log(`Retrieving alerts for organization: [${organization}], orgSlug: [${orgSlug}], project: [${project}], sourceBranchName: [${sourceBranchName}], targetBranchName: [${targetBranchName}]`)
         if (scanForDependencyAlerts == 'true') {
             alertType = 1 // Dependency Scanning alerts
             const dependencyResult = await checkAlertsForType(connection, orgSlug, project, repository, alertType, sourceBranchName, targetBranchName)
@@ -133,7 +133,7 @@ async function run() {
     tl.setResult(tl.TaskResult.Succeeded)
 }
 
-async function checkAlertsForType(
+export async function checkAlertsForType(
     connection: WebApi,
     orgSlug: string,
     project: string,
@@ -197,4 +197,6 @@ async function checkAlertsForType(
     }
 }
 
-run()
+if (require.main === module) {
+    run()
+}
