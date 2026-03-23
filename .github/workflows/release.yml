@@ -59,7 +59,7 @@ jobs:
           publisher-id: RobBos
           extension-id: GHAzDoWidget
           manifest-file: vss-extension.json
-          timeout-minutes: 5
+          marketplace-version-action: Increment
 
       - name: Print published VSIX
         run: echo "Published ${{ steps.publish.outputs.vsix-file-name }}"
