@@ -1,0 +1,14 @@
+changelog:
+  categories:
+    - title: Changes
+      exclude:
+        labels:
+          - dependencies
+    - title: "🤖 Dependencies: GitHub Actions"
+      labels:
+        - dependencies
+        - github-actions
+    - title: "📦 Dependencies: npm"
+      labels:
+        - dependencies
+        - npm
