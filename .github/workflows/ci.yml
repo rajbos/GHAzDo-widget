@@ -23,12 +23,7 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm ci
-
       - name: Build the extension
         shell: pwsh
-        env:
-          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
         run: |
-          .\make.ps1 -command "build"
+          .\make.ps1 -command "build" -skipPublish
