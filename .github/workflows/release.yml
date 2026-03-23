@@ -41,10 +41,13 @@ jobs:
         run: |
           # remove .bin folder (symlinks/extensionless files cause warnings)
           rm -rf dependencyReviewTask/node_modules/.bin
-          # remove SVG files that cause marketplace validation to fail
-          find dependencyReviewTask/node_modules -name "*.svg" -delete
-          # remove other file types that cause content-type issues
-          find dependencyReviewTask/node_modules \( -name "*.markdown" -o -name "*.cmd" -o -name "*.iml" -o -name "*.bnf" -o -name "*.resjson" \) -delete
+          # remove SVG files (files only)
+          find dependencyReviewTask/node_modules -type f -name "*.svg" -delete
+          # remove other problematic file-only types
+          find dependencyReviewTask/node_modules -type f \( -name "*.markdown" -o -name "*.cmd" -o -name "*.iml" -o -name "*.bnf" \) -delete
+          # remove *.resjson — some are directories (e.g. azure-pipelines-task-lib/Strings/resources.resjson)
+          # use rm -rf via xargs so non-empty directories are handled correctly
+          find dependencyReviewTask/node_modules -name "*.resjson" -print0 | xargs -0 --no-run-if-empty rm -rf
 
       - name: Publish to Azure DevOps Marketplace
         id: publish
