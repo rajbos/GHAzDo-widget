@@ -21,7 +21,7 @@ jobs:
 
       - name: Publish to Azure DevOps Marketplace
         id: publish
-        uses: jessehouwing/azdo-marketplace@v6
+        uses: jessehouwing/azdo-marketplace@430d9d20b8f0e2343cd0d7537b202cc3eb0dce63 # v6.1.2
         with:
           operation: publish
           auth-type: pat
