@@ -4,7 +4,8 @@
     "build-not-working": "tsc -p .",
     "package": "tfx extension create --manifest-globs vss-extension-dev.json --rev-version",
     "publish": "tfx extension create",
-    "publish-explain": "go to https://marketplace.visualstudio.com/manage and publish manually"
+    "publish-explain": "go to https://marketplace.visualstudio.com/manage and publish manually",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@types/node": "^25",
@@ -12,6 +13,7 @@
     "install": "^0.13.0",
     "npm": "^11.10.1",
     "tfx-cli": "0.23.1",
+    "vitest": "^4.1.0",
     "vss-web-extension-sdk": "^5.141.0"
   },
   "version": "0.0.1"
