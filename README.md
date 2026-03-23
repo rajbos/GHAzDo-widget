@@ -55,7 +55,7 @@ Create a PAT at: https://dev.azure.com/_usersSettings/tokens
 ## How to build the package locally
 
 ### Prerequisites
-- Node.js (v16 or higher)
+- Node.js (v24 or higher)
 - Install dependencies: `npm install` (this will install the pinned version of tfx-cli)
 
 ### Build Steps
