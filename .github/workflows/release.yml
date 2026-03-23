@@ -23,15 +23,19 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
+      - name: Install root dependencies
         run: npm ci
 
-      - name: Build the extension
-        shell: pwsh
-        env:
-          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+      - name: Install widget dependencies
+        run: npm install
+        working-directory: widgets
+
+      - name: Build pipeline task
         run: |
-          .\make.ps1 -command "build"
+          npm install --ignore-scripts
+          npx tsc -p .
+          npm prune --omit=dev
+        working-directory: dependencyReviewTask
 
       - name: Publish to Azure DevOps Marketplace
         id: publish
