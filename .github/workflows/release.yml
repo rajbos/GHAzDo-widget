@@ -49,17 +49,21 @@ jobs:
           # use rm -rf via xargs so non-empty directories are handled correctly
           find dependencyReviewTask/node_modules -name "*.resjson" -print0 | xargs -0 --no-run-if-empty rm -rf
 
+      - name: Package extension (increment revision)
+        run: npx tfx extension create --manifest-globs vss-extension.json --rev-version
+
       - name: Publish to Azure DevOps Marketplace
         id: publish
-        uses: jessehouwing/azdo-marketplace@430d9d20b8f0e2343cd0d7537b202cc3eb0dce63 # v6.1.2
-        with:
-          operation: publish
-          auth-type: pat
-          token: ${{ secrets.MARKETPLACE_TOKEN }}
-          publisher-id: RobBos
-          extension-id: GHAzDoWidget
-          manifest-file: vss-extension.json
-          marketplace-version-action: Revision
+        env:
+          MARKETPLACE_TOKEN: ${{ secrets.MARKETPLACE_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./vss-extension.json').version")
+          VSIX="RobBos.GHAzDoWidget-${VERSION}.vsix"
+          echo "Publishing $VSIX"
+          npx tfx extension publish --vsix "$VSIX" \
+            --service-url https://marketplace.visualstudio.com \
+            --token "$MARKETPLACE_TOKEN"
+          echo "vsix-file-name=$VSIX" >> "$GITHUB_OUTPUT"
 
       - name: Print published VSIX
         run: echo "Published ${{ steps.publish.outputs.vsix-file-name }}"
