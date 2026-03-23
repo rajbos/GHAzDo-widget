@@ -2,3 +2,5 @@ node_modules/
 *.vsix
 dependencyReviewTask/*.js
 dependencyReviewTask/*.js.map
+dependencyReviewTask/.taskkey
+coverage/
