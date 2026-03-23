@@ -21,27 +21,45 @@ Install the extension from the Azure DevOps marketplace: https://marketplace.vis
 - group trend line by months
 - stacked trend line (open/closed) per alert type
 
-## How to build the package
+## Release process
+
+Releases are published automatically to the [Azure DevOps Marketplace](https://marketplace.visualstudio.com/items?itemName=RobBos.GHAzDoWidget) by the [release workflow](.github/workflows/release.yml) when a version tag is pushed.
+
+### Steps to release
+
+1. **Bump the version** in `vss-extension.json` — update the `"version"` field (e.g. `"0.0.1.23"`):
+   ```json
+   "version": "0.0.1.23",
+   ```
+
+2. **Commit and push** the version change:
+   ```bash
+   git add vss-extension.json
+   git commit -m "chore: bump version to 0.0.1.23"
+   git push
+   ```
+
+3. **Push a tag** matching `v*` to trigger the release workflow:
+   ```bash
+   git tag v0.0.1.23
+   git push origin v0.0.1.23
+   ```
+
+The workflow will pick up the version from `vss-extension.json` and publish the extension to the marketplace automatically.
+
+### Prerequisites (one-time setup)
+
+Add a `MARKETPLACE_TOKEN` secret to this repository containing an Azure DevOps PAT with the **`Marketplace (publish)`** scope.  
+Create a PAT at: https://dev.azure.com/_usersSettings/tokens
+
+## How to build the package locally
 
 ### Prerequisites
 - Node.js (v16 or higher)
 - Install dependencies: `npm install` (this will install the pinned version of tfx-cli)
-- **For publishing:** Azure DevOps PAT with **both Marketplace scopes:**
-  - **Marketplace (Acquire)** - needed to read extension info
-  - **Marketplace (Publish)** - needed to publish extension
-  - Create at: https://dev.azure.com/_usersSettings/tokens
-  - Set environment variable: `$env:AZURE_DEVOPS_PAT = "your-pat-token"`
 
 ### Build Steps
 
-**Option 1: Using PowerShell script (recommended)**
-```powershell
-.\make.ps1 -command build     # Build DEV version (requires AZURE_DEVOPS_PAT)
-.\make.ps1 -command publish   # Build PROD version (requires AZURE_DEVOPS_PAT)
-```
-*Note: Both build and publish commands auto-publish to the marketplace. They require a PAT with 'Marketplace (Publish)' scope.*
-
-**Option 2: Manual build**
 ```bash
 # 1. Install widget dependencies
 cd widgets
@@ -53,16 +71,7 @@ cd dependencyReviewTask
 npm run build
 cd ..
 
-# 3. Package the extension (auto-increments version)
+# 3. Package the extension
 tfx extension create --manifest-globs vss-extension-dev.json --rev-version
 ```
 *This creates a local `.vsix` file without publishing.*
-
-### Publishing to Marketplace
-
-```bash
-# Publish the created .vsix file
-tfx extension publish --vsix RobBos.GHAzDoWidget-DEV-{version}.vsix --service-url https://marketplace.visualstudio.com --token "your-pat-token"
-```
-
-Or manually upload the `.vsix` file at the [Azure DevOps Marketplace Publisher Portal](https://marketplace.visualstudio.com/manage).
