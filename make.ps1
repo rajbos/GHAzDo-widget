@@ -2,7 +2,8 @@
 param(
     [ValidateSet("provision", "build", "publish", "")]
     [string]$command = "",
-    [int] $provisionCount = 100
+    [int] $provisionCount = 100,
+    [switch]$skipPublish
 )
 
 # global settings
@@ -266,12 +267,13 @@ function New-VSTSAuthenticationToken {
 function Build {
     param (
         [ValidateSet("dev", "prod")]
-        [string] $buildtype
+        [string] $buildtype,
+        [switch]$skipPublish
     )
     Write-Host "Building the [$buildtype] version"
 
-    # check if $env:AZURE_DEVOPS_PAT has a value
-    if ($null -eq $env:AZURE_DEVOPS_PAT) {
+    # check if $env:AZURE_DEVOPS_PAT has a value (only needed when publishing)
+    if (-not $skipPublish -and $null -eq $env:AZURE_DEVOPS_PAT) {
         Write-Host "Environment variable AZURE_DEVOPS_PAT is not set. Please set it to a valid PAT with BOTH scopes:"
         Write-Host "  - Marketplace (Acquire) - needed to read extension info"
         Write-Host "  - Marketplace (Publish) - needed to publish extension"
@@ -295,24 +297,26 @@ function Build {
     Get-ChildItem -Path .\ -Filter $extensionPrefix*.vsix | Remove-Item -Force
 
     # get the last updated version for this extension from the server to make sure we are rolling forward
-    try {
-        $output = $(npx tfx extension show --token $env:AZURE_DEVOPS_PAT --vsix $vsix --publisher "RobBos" --extension-id $extensionId --output json | ConvertFrom-Json)
-        $lastVersion = ($output.versions | Sort-Object -Property lastUpdated -Descending)[0]
-        Write-Host "Last version: [$($lastVersion.version)] from server"
-        # overwrite the version in the json file
-        $json = Get-Content .\$vsix | ConvertFrom-Json -Depth 10
-        $json.version = $lastVersion.version
-        # write the json file back
-        $json | ConvertTo-Json -Depth 10 | Set-Content .\$vsix
-    }
-    catch {
-        Write-Host "Error loading the version from Azure DevOps Marketplace"
-        Write-Host "Check that AZURE_DEVOPS_PAT has BOTH scopes:"
-        Write-Host "  - Marketplace (Acquire) - needed to read extension info"
-        Write-Host "  - Marketplace (Publish) - needed to publish extension"
-        Write-Host "Create a PAT at: https://dev.azure.com/_usersSettings/tokens"
-        Write-Host "Error details: $($_.Exception.Message)"
-        return
+    if (-not $skipPublish) {
+        try {
+            $output = $(npx tfx extension show --token $env:AZURE_DEVOPS_PAT --vsix $vsix --publisher "RobBos" --extension-id $extensionId --output json | ConvertFrom-Json)
+            $lastVersion = ($output.versions | Sort-Object -Property lastUpdated -Descending)[0]
+            Write-Host "Last version: [$($lastVersion.version)] from server"
+            # overwrite the version in the json file
+            $json = Get-Content .\$vsix | ConvertFrom-Json -Depth 10
+            $json.version = $lastVersion.version
+            # write the json file back
+            $json | ConvertTo-Json -Depth 10 | Set-Content .\$vsix
+        }
+        catch {
+            Write-Host "Error loading the version from Azure DevOps Marketplace"
+            Write-Host "Check that AZURE_DEVOPS_PAT has BOTH scopes:"
+            Write-Host "  - Marketplace (Acquire) - needed to read extension info"
+            Write-Host "  - Marketplace (Publish) - needed to publish extension"
+            Write-Host "Create a PAT at: https://dev.azure.com/_usersSettings/tokens"
+            Write-Host "Error details: $($_.Exception.Message)"
+            return
+        }
     }
 
     # install widgets dependencies if not already installed
@@ -360,12 +364,17 @@ function Build {
     $json = Get-Content .\$vsix | ConvertFrom-Json
     $visx = "$extensionPrefix$($json.version).vsix"
 
-    Write-Host "Publishing [$visx]"
-    npx tfx extension publish --vsix $visx --service-url https://marketplace.visualstudio.com --token "$($env:AZURE_DEVOPS_PAT)"
+    if (-not $skipPublish) {
+        Write-Host "Publishing [$visx]"
+        npx tfx extension publish --vsix $visx --service-url https://marketplace.visualstudio.com --token "$($env:AZURE_DEVOPS_PAT)"
+    }
+    else {
+        Write-Host "Skipping publish (skipPublish flag set). Packaged: [$visx]"
+    }
 }
 
 if ("build" -eq $command) {
-    Build -buildtype "dev"
+    Build -buildtype "dev" -skipPublish:$skipPublish
     exit
 }
 
