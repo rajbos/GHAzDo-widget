@@ -36,8 +36,12 @@ function createTaskRunner() {
 
     const code = readFileSync(resolve(__dirname, '..', 'index.js'), 'utf-8')
 
+    const fakeModule = { exports: {} }
+    ;(fakeRequire as any).main = fakeModule
+
     const sandbox = {
         require: fakeRequire,
+        module: fakeModule,
         console,
         exports: {},
         Object,
