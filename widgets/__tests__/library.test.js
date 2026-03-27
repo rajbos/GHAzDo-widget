@@ -387,3 +387,277 @@ describe('getAlerts (no repoId)', () => {
         expect(result.values.codeAlerts).toBe(-1)
     })
 })
+
+describe('storeAlerts', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('initializes storedAlertData on first call', async () => {
+        const alertResult = { count: 2, value: [{ alertId: 1, firstSeenDate: '2024-01-01T00:00:00Z' }, { alertId: 2, firstSeenDate: '2024-01-01T00:00:00Z' }] }
+        await lib.storeAlerts('repo-1', alertResult, 'MyRepo')
+        const grouped = lib.getAlertsGroupedByRepo('org', 'project')
+        expect(grouped.repoNames).toContain('MyRepo')
+    })
+
+    it('tags alerts with repositoryId', async () => {
+        const alert = { alertId: 1, firstSeenDate: '2024-01-01T00:00:00Z' }
+        const alertResult = { count: 1, value: [alert] }
+        await lib.storeAlerts('repo-42', alertResult)
+        const grouped = lib.getAlertsGroupedByRepo('org', 'project')
+        // repo should appear with fallback name since no repoName provided
+        expect(grouped.repoNames.some(n => n.includes('repo-42'))).toBe(true)
+    })
+
+    it('accumulates alerts across multiple calls', async () => {
+        const result1 = { count: 1, value: [{ alertId: 1, firstSeenDate: '2024-01-01T00:00:00Z' }] }
+        const result2 = { count: 1, value: [{ alertId: 2, firstSeenDate: '2024-01-01T00:00:00Z' }] }
+        await lib.storeAlerts('repo-A', result1, 'RepoA')
+        await lib.storeAlerts('repo-B', result2, 'RepoB')
+        const grouped = lib.getAlertsGroupedByRepo('org', 'project')
+        expect(grouped.repoNames).toContain('RepoA')
+        expect(grouped.repoNames).toContain('RepoB')
+    })
+
+    it('does not tag alerts with repoName when not provided', async () => {
+        const alert = { alertId: 1, firstSeenDate: '2024-01-01T00:00:00Z' }
+        const alertResult = { count: 1, value: [alert] }
+        await lib.storeAlerts('repo-1', alertResult)
+        // alert.repositoryName should be undefined
+        expect(alert.repositoryName).toBeUndefined()
+    })
+
+    it('tags alerts with repoName when provided', async () => {
+        const alert = { alertId: 1 }
+        const alertResult = { count: 1, value: [alert] }
+        await lib.storeAlerts('repo-1', alertResult, 'MyRepo')
+        expect(alert.repositoryName).toBe('MyRepo')
+    })
+})
+
+describe('getAlertsGroupedByRepo', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('returns empty result when no stored data', () => {
+        const result = lib.getAlertsGroupedByRepo('org', 'project')
+        expect(result.repoNames).toEqual([])
+        expect(result.datePoints).toEqual([])
+        expect(result.series).toEqual([])
+    })
+
+    it('groups alerts by repository', async () => {
+        const alertResult = {
+            count: 2,
+            value: [
+                { alertId: 1, alertType: 'dependency', firstSeenDate: '2020-01-01T00:00:00Z', repositoryId: 'r1', repositoryName: 'RepoOne' },
+                { alertId: 2, alertType: 'dependency', firstSeenDate: '2020-01-01T00:00:00Z', repositoryId: 'r2', repositoryName: 'RepoTwo' },
+            ],
+        }
+        await lib.storeAlerts('r1', { count: 1, value: [alertResult.value[0]] }, 'RepoOne')
+        await lib.storeAlerts('r2', { count: 1, value: [alertResult.value[1]] }, 'RepoTwo')
+        const result = lib.getAlertsGroupedByRepo('org', 'project')
+        expect(result.repoNames).toContain('RepoOne')
+        expect(result.repoNames).toContain('RepoTwo')
+        expect(result.series.length).toBe(2)
+    })
+
+    it('filters alerts by alertType when provided', async () => {
+        const depAlert = { alertId: 1, alertType: 'dependency', firstSeenDate: '2020-01-01T00:00:00Z' }
+        const secretAlert = { alertId: 2, alertType: 'secret', firstSeenDate: '2020-01-01T00:00:00Z' }
+        await lib.storeAlerts('repo-1', { count: 1, value: [depAlert] }, 'RepoA')
+        await lib.storeAlerts('repo-2', { count: 1, value: [secretAlert] }, 'RepoB')
+        const depType = lib.GetAlertTypeFromValue('1') // dependency
+        const result = lib.getAlertsGroupedByRepo('org', 'project', 21, 1, depType)
+        // Only dependency alerts should be included
+        expect(result.repoNames).toContain('RepoA')
+        expect(result.repoNames).not.toContain('RepoB')
+    })
+
+    it('returns sorted repository names', async () => {
+        await lib.storeAlerts('r1', { count: 1, value: [{ alertId: 1, firstSeenDate: '2020-01-01T00:00:00Z' }] }, 'ZebraRepo')
+        await lib.storeAlerts('r2', { count: 1, value: [{ alertId: 2, firstSeenDate: '2020-01-01T00:00:00Z' }] }, 'AlphaRepo')
+        const result = lib.getAlertsGroupedByRepo('org', 'project')
+        expect(result.repoNames[0]).toBe('AlphaRepo')
+        expect(result.repoNames[1]).toBe('ZebraRepo')
+    })
+})
+
+describe('getAlertSeverityCounts', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('returns zero counts when no stored data matches alertType', async () => {
+        // Store alerts with a different type so the filtered result is empty
+        await lib.storeAlerts('repo-1', {
+            count: 1,
+            value: [{ alertId: 1, alertType: 'secret', severity: 'critical' }],
+        }, 'MyRepo')
+        const depType = lib.GetAlertTypeFromValue('1') // dependency
+        const result = await lib.getAlertSeverityCounts('org', 'project', 'repo-1', depType)
+        expect(result.find(s => s.severity === 'critical').count).toBe(0)
+    })
+
+    it('counts alerts by severity', async () => {
+        await lib.storeAlerts('repo-1', {
+            count: 3,
+            value: [
+                { alertId: 1, alertType: 'dependency', severity: 'critical' },
+                { alertId: 2, alertType: 'dependency', severity: 'critical' },
+                { alertId: 3, alertType: 'dependency', severity: 'high' },
+            ],
+        }, 'MyRepo')
+        const depType = lib.GetAlertTypeFromValue('1') // dependency
+        const result = await lib.getAlertSeverityCounts('org', 'project', 'repo-1', depType)
+        expect(result.find(s => s.severity === 'critical').count).toBe(2)
+        expect(result.find(s => s.severity === 'high').count).toBe(1)
+        expect(result.find(s => s.severity === 'medium').count).toBe(0)
+        expect(result.find(s => s.severity === 'low').count).toBe(0)
+    })
+
+    it('returns all four severity levels', async () => {
+        await lib.storeAlerts('repo-1', { count: 0, value: [] }, 'MyRepo')
+        const depType = lib.GetAlertTypeFromValue('1')
+        const result = await lib.getAlertSeverityCounts('org', 'project', 'repo-1', depType)
+        const severities = result.map(s => s.severity)
+        expect(severities).toContain('critical')
+        expect(severities).toContain('high')
+        expect(severities).toContain('medium')
+        expect(severities).toContain('low')
+    })
+})
+
+describe('getAlertConfidenceCounts', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('counts alerts by confidence level', async () => {
+        await lib.storeAlerts('repo-1', {
+            count: 4,
+            value: [
+                { alertId: 1, alertType: 'code', confidence: 'high' },
+                { alertId: 2, alertType: 'code', confidence: 'high' },
+                { alertId: 3, alertType: 'code', confidence: 'medium' },
+                { alertId: 4, alertType: 'code', confidence: 'low' },
+            ],
+        }, 'MyRepo')
+        const codeType = lib.GetAlertTypeFromValue('3') // code
+        const result = await lib.getAlertConfidenceCounts('org', 'project', 'repo-1', codeType)
+        expect(result.find(c => c.confidence === 'high').count).toBe(2)
+        expect(result.find(c => c.confidence === 'medium').count).toBe(1)
+        expect(result.find(c => c.confidence === 'low').count).toBe(1)
+    })
+
+    it('returns zero counts when no stored data matches alertType', async () => {
+        await lib.storeAlerts('repo-1', {
+            count: 1,
+            value: [{ alertId: 1, alertType: 'dependency', confidence: 'high' }],
+        }, 'MyRepo')
+        const codeType = lib.GetAlertTypeFromValue('3') // code
+        const result = await lib.getAlertConfidenceCounts('org', 'project', 'repo-1', codeType)
+        expect(result.find(c => c.confidence === 'high').count).toBe(0)
+    })
+
+    it('returns all three confidence levels', async () => {
+        await lib.storeAlerts('repo-1', { count: 0, value: [] }, 'MyRepo')
+        const codeType = lib.GetAlertTypeFromValue('3')
+        const result = await lib.getAlertConfidenceCounts('org', 'project', 'repo-1', codeType)
+        const levels = result.map(c => c.confidence)
+        expect(levels).toContain('high')
+        expect(levels).toContain('medium')
+        expect(levels).toContain('low')
+    })
+})
+
+describe('getTimeToCloseData', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('returns empty dataPoints when storedAlertData has no matching alerts', async () => {
+        // Store only secret alerts, but query for dependency
+        await lib.storeAlerts('repo-1', {
+            count: 1,
+            value: [{ alertId: 1, alertType: 'secret' }],
+        }, 'MyRepo')
+        const depType = lib.GetAlertTypeFromValue('1') // dependency
+        const result = await lib.getTimeToCloseData('org', 'project', 'repo-1', depType)
+        expect(result.dataPoints).toEqual([])
+        expect(result.labels).toEqual([])
+    })
+
+    it('calculates time to close for fixed alerts', async () => {
+        const firstSeen = '2024-01-01T00:00:00Z'
+        const fixedDate = '2024-01-11T00:00:00Z' // 10 days later
+        await lib.storeAlerts('repo-1', {
+            count: 1,
+            value: [{ alertId: 1, alertType: 'dependency', firstSeenDate: firstSeen, fixedDate }],
+        }, 'MyRepo')
+        const depType = lib.GetAlertTypeFromValue('1')
+        const result = await lib.getTimeToCloseData('org', 'project', 'repo-1', depType, 9999)
+        expect(result.dataPoints).toContain(10)
+        expect(result.labels[0]).toBe('2024-01-11')
+    })
+
+    it('calculates time to close for dismissed alerts', async () => {
+        const firstSeen = '2024-01-01T00:00:00Z'
+        const dismissedOn = '2024-01-06T00:00:00Z' // 5 days later
+        await lib.storeAlerts('repo-1', {
+            count: 1,
+            value: [{
+                alertId: 1,
+                alertType: 'dependency',
+                firstSeenDate: firstSeen,
+                dismissal: { requestedOn: dismissedOn },
+            }],
+        }, 'MyRepo')
+        const depType = lib.GetAlertTypeFromValue('1')
+        const result = await lib.getTimeToCloseData('org', 'project', 'repo-1', depType, 9999)
+        expect(result.dataPoints).toContain(5)
+    })
+
+    it('returns analysisStartDate and analysisEndDate', async () => {
+        await lib.storeAlerts('repo-1', { count: 0, value: [] }, 'MyRepo')
+        const depType = lib.GetAlertTypeFromValue('1')
+        const result = await lib.getTimeToCloseData('org', 'project', 'repo-1', depType)
+        expect(result.analysisStartDate).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+        expect(result.analysisEndDate).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    })
+
+    it('excludes alerts fixed before the cutoff window', async () => {
+        // Alert fixed 200 days ago, but default daysBack is 90
+        const firstSeen = '2020-01-01T00:00:00Z'
+        const fixedDate = '2020-01-10T00:00:00Z'
+        await lib.storeAlerts('repo-1', {
+            count: 1,
+            value: [{ alertId: 1, alertType: 'dependency', firstSeenDate: firstSeen, fixedDate }],
+        }, 'MyRepo')
+        const depType = lib.GetAlertTypeFromValue('1')
+        const result = await lib.getTimeToCloseData('org', 'project', 'repo-1', depType, 90)
+        // The fix was 5+ years ago, should not be within the 90-day window
+        expect(result.dataPoints).toEqual([])
+    })
+
+    it('does not include open (unfixed) alerts in dataPoints', async () => {
+        await lib.storeAlerts('repo-1', {
+            count: 1,
+            value: [{ alertId: 1, alertType: 'dependency', firstSeenDate: '2024-01-01T00:00:00Z' }],
+        }, 'MyRepo')
+        const depType = lib.GetAlertTypeFromValue('1')
+        const result = await lib.getTimeToCloseData('org', 'project', 'repo-1', depType, 9999)
+        expect(result.dataPoints).toEqual([])
+    })
+})
