@@ -661,3 +661,280 @@ describe('getTimeToCloseData', () => {
         expect(result.dataPoints).toEqual([])
     })
 })
+
+describe('getAlertsTrendLines', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('returns empty arrays when storedAlertData is null and repoId is -1', async () => {
+        const result = await lib.getAlertsTrendLines('org', 'proj', '-1', 3, 1, null, false)
+        expect(result.secretAlertsTrend).toEqual([])
+        expect(result.dependencyAlertsTrend).toEqual([])
+        expect(result.codeAlertsTrend).toEqual([])
+    })
+
+    it('returns 3 trend arrays for overviewType=false with stored data', async () => {
+        await lib.storeAlerts('repo-1', {
+            count: 3,
+            value: [
+                { alertId: 1, alertType: 'secret', firstSeenDate: '2020-01-01T00:00:00Z' },
+                { alertId: 2, alertType: 'dependency', firstSeenDate: '2020-01-01T00:00:00Z' },
+                { alertId: 3, alertType: 'code', firstSeenDate: '2020-01-01T00:00:00Z' },
+            ],
+        }, 'TestRepo')
+        const result = await lib.getAlertsTrendLines('org', 'proj', '-1', 1, 1, null, false)
+        expect(result.secretAlertsTrend).toBeDefined()
+        expect(result.dependencyAlertsTrend).toBeDefined()
+        expect(result.codeAlertsTrend).toBeDefined()
+        // Each alert is from 2020, well within any window, so shows as active on today
+        expect(result.secretAlertsTrend[result.secretAlertsTrend.length - 1]).toBe(1)
+        expect(result.dependencyAlertsTrend[result.dependencyAlertsTrend.length - 1]).toBe(1)
+        expect(result.codeAlertsTrend[result.codeAlertsTrend.length - 1]).toBe(1)
+    })
+
+    it('returns open/dismissed/fixed trends for overviewType=true', async () => {
+        await lib.storeAlerts('repo-1', {
+            count: 2,
+            value: [
+                { alertId: 1, alertType: 'dependency', firstSeenDate: '2020-01-01T00:00:00Z' },
+                { alertId: 2, alertType: 'dependency', firstSeenDate: '2020-01-01T00:00:00Z', fixedDate: '2020-01-10T00:00:00Z' },
+            ],
+        }, 'TestRepo')
+        const alertType = lib.GetAlertTypeFromValue('1') // dependency
+        const result = await lib.getAlertsTrendLines('org', 'proj', '-1', 1, 1, alertType, true)
+        expect(result.alertsOpenTrend).toBeDefined()
+        expect(result.alertsDismissedTrend).toBeDefined()
+        expect(result.alertFixedTrend).toBeDefined()
+        // Alert 1 is still open; Alert 2 was fixed long ago
+        expect(result.alertsOpenTrend[result.alertsOpenTrend.length - 1]).toBe(1)
+        expect(result.alertFixedTrend[result.alertFixedTrend.length - 1]).toBe(1)
+    })
+
+    it('does not include overviewType=false keys in overviewType=true result', async () => {
+        await lib.storeAlerts('repo-1', { count: 0, value: [] }, 'TestRepo')
+        const alertType = lib.GetAlertTypeFromValue('1')
+        const result = await lib.getAlertsTrendLines('org', 'proj', '-1', 1, 1, alertType, true)
+        expect(result.secretAlertsTrend).toBeUndefined()
+        expect(result.dependencyAlertsTrend).toBeUndefined()
+        expect(result.codeAlertsTrend).toBeUndefined()
+    })
+
+    it('filters by alertType in overviewType=true mode', async () => {
+        await lib.storeAlerts('repo-1', {
+            count: 3,
+            value: [
+                { alertId: 1, alertType: 'dependency', firstSeenDate: '2020-01-01T00:00:00Z' },
+                { alertId: 2, alertType: 'secret', firstSeenDate: '2020-01-01T00:00:00Z' },
+                { alertId: 3, alertType: 'code', firstSeenDate: '2020-01-01T00:00:00Z' },
+            ],
+        }, 'TestRepo')
+        const alertType = lib.GetAlertTypeFromValue('1') // dependency only
+        const result = await lib.getAlertsTrendLines('org', 'proj', '-1', 1, 1, alertType, true)
+        // Only 1 dependency alert should be counted as open
+        expect(result.alertsOpenTrend[result.alertsOpenTrend.length - 1]).toBe(1)
+    })
+})
+
+describe('fillSelectRepoDropdown', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('always adds "Select a repository" as first option', () => {
+        const appended = []
+        const mockDropDown = { append: (text) => appended.push(text) }
+        lib.fillSelectRepoDropdown(mockDropDown, [])
+        expect(appended[0]).toContain('Select a repository')
+    })
+
+    it('adds "All repos in this project" option when showAllRepos=true', () => {
+        const appended = []
+        const mockDropDown = { append: (text) => appended.push(text) }
+        lib.fillSelectRepoDropdown(mockDropDown, [], true)
+        expect(appended.some(s => s.includes('All repos'))).toBe(true)
+    })
+
+    it('does not add "All repos" option when showAllRepos=false', () => {
+        const appended = []
+        const mockDropDown = { append: (text) => appended.push(text) }
+        lib.fillSelectRepoDropdown(mockDropDown, [])
+        expect(appended.some(s => s.includes('All repos'))).toBe(false)
+    })
+
+    it('sorts repos alphabetically before adding options', () => {
+        const appended = []
+        const mockDropDown = { append: (text) => appended.push(text) }
+        const repos = [{ id: '2', name: 'ZebraRepo' }, { id: '1', name: 'AlphaRepo' }]
+        lib.fillSelectRepoDropdown(mockDropDown, repos)
+        const repoOptions = appended.slice(1) // skip "Select a repository"
+        expect(repoOptions[0]).toContain('AlphaRepo')
+        expect(repoOptions[1]).toContain('ZebraRepo')
+    })
+})
+
+describe('getSelectedRepoIdFromDropdown', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('returns the value from the dropdown', () => {
+        const mockDropDown = { val: () => 'repo-123' }
+        expect(lib.getSelectedRepoIdFromDropdown(mockDropDown)).toBe('repo-123')
+    })
+})
+
+describe('getSelectedRepoNameFromDropdown', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('returns the selected option text from the dropdown', () => {
+        const mockDropDown = { find: () => ({ text: () => 'My Repo' }) }
+        expect(lib.getSelectedRepoNameFromDropdown(mockDropDown)).toBe('My Repo')
+    })
+})
+
+describe('logWidgetSettings', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('returns parsed settings object', () => {
+        const settings = { repoId: 'abc', alertType: '1' }
+        const widgetSettings = { customSettings: { data: JSON.stringify(settings) } }
+        const mockVSS = { getExtensionContext: vi.fn().mockReturnValue({ version: '1.0.0' }) }
+        const result = lib.logWidgetSettings(widgetSettings, mockVSS, 'Test Widget')
+        expect(result).toEqual(settings)
+    })
+
+    it('calls console.log with description and extension version', () => {
+        const widgetSettings = { customSettings: { data: JSON.stringify({ x: 1 }) } }
+        const mockVSS = { getExtensionContext: vi.fn().mockReturnValue({ version: '9.9.9' }) }
+        lib.logWidgetSettings(widgetSettings, mockVSS, 'My Widget')
+        expect(lib.console.log).toHaveBeenCalledWith(
+            expect.stringContaining('My Widget')
+        )
+        expect(lib.console.log).toHaveBeenCalledWith(
+            expect.stringContaining('9.9.9')
+        )
+    })
+})
+
+describe('getWidgetId', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('returns widget ID constructed from publisherId and extensionId', () => {
+        const mockVSS = {
+            getExtensionContext: vi.fn().mockReturnValue({
+                publisherId: 'RobBos',
+                extensionId: 'GHAzDoWidget',
+            }),
+        }
+        const result = lib.getWidgetId(mockVSS)
+        expect(result).toBe('RobBos.GHAzDoWidget.GHAzDoWidget.Configuration')
+    })
+
+    it('includes .GHAzDoWidget.Configuration suffix', () => {
+        const mockVSS = {
+            getExtensionContext: vi.fn().mockReturnValue({
+                publisherId: 'Publisher',
+                extensionId: 'Extension',
+            }),
+        }
+        const result = lib.getWidgetId(mockVSS)
+        expect(result).toContain('.GHAzDoWidget.Configuration')
+    })
+})
+
+describe('showRepoInfo', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('returns early without updating progressDiv when repos is undefined', async () => {
+        const progressDiv = { repoCount: { textContent: '5' } }
+        await lib.showRepoInfo(undefined, { name: 'proj' }, 'org', progressDiv, 0)
+        expect(progressDiv.repoCount.textContent).toBe('5')
+    })
+
+    it('updates repoCount in progressDiv by the number of repos', async () => {
+        const progressDiv = { repoCount: { textContent: '3' } }
+        const repos = [{ id: 'r1', name: 'Repo1', size: 100 }]
+        await lib.showRepoInfo(repos, { name: 'proj' }, 'org', progressDiv, 0)
+        expect(progressDiv.repoCount.textContent).toBe(4)
+    })
+
+    it('queues repos with size > 0 in getAlertCalls but skips size-0 repos', async () => {
+        const progressDiv = { repoCount: { textContent: '0' } }
+        const repos = [
+            { id: 'r1', name: 'EmptyRepo', size: 0 },
+            { id: 'r2', name: 'FullRepo', size: 100 },
+        ]
+        await lib.showRepoInfo(repos, { name: 'proj' }, 'org', progressDiv, 0)
+        expect(lib.getAlertCalls.length).toBe(1)
+        expect(lib.getAlertCalls[0].repo.name).toBe('FullRepo')
+    })
+})
+
+describe('showAlertInfo', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('updates progressDiv counts when repoAlerts has values', () => {
+        const progressDiv = {
+            dependencyAlertCount: { textContent: '0' },
+            secretAlertCount: { textContent: '0' },
+            codeAlertCount: { textContent: '0' },
+        }
+        lib.showAlertInfo('org', { name: 'proj' }, { name: 'repo' },
+            { values: { dependencyAlerts: 2, secretAlerts: 1, codeAlerts: 3 } },
+            progressDiv, 0)
+        expect(progressDiv.dependencyAlertCount.textContent).toBe(2)
+        expect(progressDiv.secretAlertCount.textContent).toBe(1)
+        expect(progressDiv.codeAlertCount.textContent).toBe(3)
+    })
+
+    it('accumulates counts correctly across multiple calls', () => {
+        const progressDiv = {
+            dependencyAlertCount: { textContent: '3' },
+            secretAlertCount: { textContent: '2' },
+            codeAlertCount: { textContent: '1' },
+        }
+        lib.showAlertInfo('org', { name: 'proj' }, { name: 'repo' },
+            { values: { dependencyAlerts: 1, secretAlerts: 1, codeAlerts: 1 } },
+            progressDiv, 0)
+        expect(progressDiv.dependencyAlertCount.textContent).toBe(4)
+        expect(progressDiv.secretAlertCount.textContent).toBe(3)
+        expect(progressDiv.codeAlertCount.textContent).toBe(2)
+    })
+
+    it('does not update progressDiv when repoAlerts is null', () => {
+        const progressDiv = {
+            dependencyAlertCount: { textContent: '5' },
+            secretAlertCount: { textContent: '3' },
+            codeAlertCount: { textContent: '2' },
+        }
+        lib.showAlertInfo('org', { name: 'proj' }, { name: 'repo' }, null, progressDiv, 0)
+        expect(progressDiv.dependencyAlertCount.textContent).toBe('5')
+    })
+})

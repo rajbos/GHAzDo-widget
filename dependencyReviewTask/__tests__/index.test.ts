@@ -4,8 +4,8 @@ import { resolve } from 'path'
 import vm from 'vm'
 import { createRequire } from 'module'
 
-function createTaskRunner() {
-    const mockTl = {
+function createMockTl() {
+    return {
         debug: vi.fn(),
         warning: vi.fn(),
         setResult: vi.fn(),
@@ -18,6 +18,40 @@ function createTaskRunner() {
             Skipped: 9,
         },
     }
+}
+
+function createFunctions() {
+    const mockTl = createMockTl()
+    const code = readFileSync(resolve(__dirname, '..', 'index.js'), 'utf-8')
+    const fakeModule = { exports: {} }
+    const fakeRequire = (mod: string) => {
+        if (mod === 'azure-pipelines-task-lib/task') return mockTl
+        if (mod === 'azure-devops-node-api') return {
+            getHandlerFromToken: () => ({}),
+            WebApi: vi.fn(),
+        }
+        throw new Error(`Unexpected require: ${mod}`)
+    }
+    // Set main to a DIFFERENT object so run() is NOT auto-invoked
+    ;(fakeRequire as any).main = {}
+    const sandbox = {
+        require: fakeRequire,
+        module: fakeModule,
+        console,
+        exports: fakeModule.exports,
+        Object, Promise, Error, JSON, Array, setTimeout,
+        __dirname: resolve(__dirname, '..'),
+    }
+    vm.createContext(sandbox)
+    vm.runInContext(code, sandbox)
+    return {
+        mockTl,
+        getSystemAccessToken: (fakeModule.exports as any).getSystemAccessToken,
+    }
+}
+
+function createTaskRunner() {
+    const mockTl = createMockTl()
 
     const mockRestGet = vi.fn()
 
@@ -261,5 +295,97 @@ describe('run() - both scans enabled', () => {
             2,
             expect.stringContaining('Vulnerable dep')
         )
+    })
+})
+
+describe('run() - terminal state', () => {
+    it('calls setResult exactly once (Succeeded) on happy path', async () => {
+        const { mockTl, mockRestGet, sandbox, code } = createTaskRunner()
+        setupPRContext(mockTl)
+        mockTl.getInput.mockImplementation((name: string) => {
+            if (name === 'DepedencyAlertsScan') return 'true'
+            if (name === 'CodeScanningAlerts') return 'false'
+            return undefined
+        })
+        mockRestGet.mockResolvedValue({ result: { count: 0, value: [] } })
+
+        await runTask(mockTl, mockRestGet, sandbox, code)
+
+        expect(mockTl.setResult).toHaveBeenCalledTimes(1)
+        expect(mockTl.setResult).toHaveBeenCalledWith(0)
+    })
+
+    it('does not call setResult(Succeeded) after calling setResult(Failed)', async () => {
+        const { mockTl, mockRestGet, sandbox, code } = createTaskRunner()
+        setupPRContext(mockTl)
+        mockTl.getInput.mockImplementation((name: string) => {
+            if (name === 'DepedencyAlertsScan') return 'true'
+            if (name === 'CodeScanningAlerts') return 'false'
+            return undefined
+        })
+        mockRestGet
+            .mockResolvedValueOnce({ result: { count: 1, value: [{ alertId: 10, title: 'Critical Vuln' }] } })
+            .mockResolvedValueOnce({ result: { count: 0, value: [] } })
+
+        await runTask(mockTl, mockRestGet, sandbox, code)
+
+        expect(mockTl.setResult).toHaveBeenCalledTimes(1)
+        expect(mockTl.setResult).toHaveBeenLastCalledWith(2, expect.stringContaining('Critical Vuln'))
+    })
+})
+
+describe('run() - error handling', () => {
+    it('calls setResult(Failed) with error message when an Error is thrown', async () => {
+        const { mockTl, mockRestGet, sandbox, code } = createTaskRunner()
+        mockTl.getVariable.mockImplementation(() => {
+            throw new Error('Unexpected failure')
+        })
+
+        await runTask(mockTl, mockRestGet, sandbox, code)
+
+        expect(mockTl.setResult).toHaveBeenCalledWith(
+            2,
+            expect.stringContaining('Unexpected failure')
+        )
+        expect(mockTl.setResult).toHaveBeenCalledTimes(1)
+    })
+
+    it('calls setResult(Failed) with generic message when a non-Error is thrown', async () => {
+        const { mockTl, mockRestGet, sandbox, code } = createTaskRunner()
+        mockTl.getVariable.mockImplementation(() => {
+            throw 'some string error'
+        })
+
+        await runTask(mockTl, mockRestGet, sandbox, code)
+
+        expect(mockTl.setResult).toHaveBeenCalledWith(
+            2,
+            'An unknown error occurred'
+        )
+        expect(mockTl.setResult).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe('getSystemAccessToken', () => {
+    it('returns the access token when auth scheme is OAuth', () => {
+        const { mockTl, getSystemAccessToken } = createFunctions()
+        mockTl.getEndpointAuthorization.mockReturnValue({
+            scheme: 'OAuth',
+            parameters: { AccessToken: 'my-secret-token' },
+        })
+        const result = getSystemAccessToken()
+        expect(result).toBe('my-secret-token')
+        expect(mockTl.debug).toHaveBeenCalledWith('Got an OAuth authentication token')
+    })
+
+    it('calls warning and returns undefined when auth scheme is not OAuth', () => {
+        const { mockTl, getSystemAccessToken } = createFunctions()
+        mockTl.getEndpointAuthorization.mockReturnValue({
+            scheme: 'Basic',
+            parameters: {},
+        })
+        const result = getSystemAccessToken()
+        expect(result).toBeUndefined()
+        expect(mockTl.warning).toHaveBeenCalledWith('Could not determine credentials to use')
     })
 })

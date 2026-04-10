@@ -119,6 +119,7 @@ export async function run() {
 
         if (errorString.length > 0) {
             tl.setResult(tl.TaskResult.Failed, errorString)
+            return
         }
     }
     catch (err: unknown) {
@@ -127,6 +128,7 @@ export async function run() {
         } else {
             tl.setResult(tl.TaskResult.Failed, 'An unknown error occurred')
         }
+        return
     }
 
     // everything worked, no new alerts found and at least one scanning option was enabled
