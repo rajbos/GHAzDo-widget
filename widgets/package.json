@@ -11,7 +11,7 @@
     "@types/node": "^25",
     "@types/q": "^1.5.8",
     "install": "^0.13.0",
-    "npm": "^11.12.0",
+    "npm": "^11.12.1",
     "tfx-cli": "0.23.1",
     "vitest": "^4.1.0",
     "vss-web-extension-sdk": "^5.141.0"
