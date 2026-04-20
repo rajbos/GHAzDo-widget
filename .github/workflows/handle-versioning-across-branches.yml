@@ -1,8 +1,11 @@
-name: Handle versioning accros branches
+name: Handle versioning across branches
 
 on:
   push:
-    # todo: add file paths of the files with version numbers
+    paths:
+      - 'dependencyReviewTask/task.json'
+      - 'vss-extension-dev.json'
+      - 'vss-extension.json'
 
 permissions:
   contents: read
@@ -37,13 +40,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Get highest version number accross all branches
+      - name: Get highest version number across all branches
         id: get-version
         shell: pwsh
         env:
           AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT}}
         run: |
           # get the last updated version for this extension from the server
+          $vsix = "vss-extension-dev.json"
           $output = $(npx tfx extension show --token $env:AZURE_DEVOPS_PAT --vsix $vsix --publisher "RobBos" --extension-id "GHAzDoWidget-DEV" --output json | ConvertFrom-Json)
           if ($null -eq $output) {
             Write-Host "No versions found on the server"
@@ -69,7 +73,6 @@ jobs:
           }
 
           # loop over all branches
-          $highestVersion = 0
           foreach ($branch in $(git branch -r --format='%(refname:short)')) {
             Write-Host "Checkout the branch [$branch]"
             git checkout $branch
