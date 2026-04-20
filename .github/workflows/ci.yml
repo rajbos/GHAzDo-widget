@@ -28,5 +28,11 @@ jobs:
         run: |
           .\make.ps1 -command "build" -skipPublish
 
+      - name: Install dev dependencies for tests
+        run: |
+          cd widgets && npm ci
+          cd ../dependencyReviewTask && npm ci
+          cd ..
+
       - name: Run tests
         run: npm test
