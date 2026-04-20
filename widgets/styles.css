@@ -1,3 +1,30 @@
+:root {
+    --ghazdo-bg-color: #ffffff;
+    --ghazdo-text-color: #000000;
+    --ghazdo-border-color: #dddddd;
+    --ghazdo-input-bg: #ffffff;
+    --ghazdo-input-text: #000000;
+}
+
+.ms-Theme--Dark :root {
+    --ghazdo-bg-color: #2d2d2d;
+    --ghazdo-text-color: #ffffff;
+    --ghazdo-border-color: #555555;
+    --ghazdo-input-bg: #3e3e3e;
+    --ghazdo-input-text: #ffffff;
+}
+
+body {
+    background-color: var(--ghazdo-bg-color);
+    color: var(--ghazdo-text-color);
+}
+
+.container {
+    background-color: var(--ghazdo-bg-color);
+    color: var(--ghazdo-text-color);
+    padding: 10px;
+}
+
 .column-container {
     display: flex;
     justify-content: center;
@@ -38,12 +65,28 @@
     width: 100%;
     border-collapse: collapse;
     border-spacing: 0;
-    border: 1px solid #dddddd00;
+    border: 1px solid var(--ghazdo-border-color);
 }
 
 .ghazdo-table td {
     padding-top: 5px;
     vertical-align: middle;
+}
+
+.dropdown, select, input {
+    background-color: var(--ghazdo-input-bg);
+    color: var(--ghazdo-input-text);
+    border: 1px solid var(--ghazdo-border-color);
+}
+
+fieldset {
+    border: 1px solid var(--ghazdo-border-color);
+    background-color: var(--ghazdo-bg-color);
+    color: var(--ghazdo-text-color);
+}
+
+label {
+    color: var(--ghazdo-text-color);
 }
 
 .loading-spinner {
