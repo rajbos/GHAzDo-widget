@@ -27,3 +27,6 @@ jobs:
         shell: pwsh
         run: |
           .\make.ps1 -command "build" -skipPublish
+
+      - name: Run tests
+        run: npm test
