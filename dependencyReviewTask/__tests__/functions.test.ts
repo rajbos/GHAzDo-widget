@@ -15,7 +15,9 @@ vi.mock('azure-devops-node-api', () => ({
     WebApi: vi.fn(),
 }))
 
-import { getAlerts, checkAlertsForType } from '../index'
+import { getAlerts, checkAlertsForType, getSystemAccessToken, run } from '../index'
+import * as tl from 'azure-pipelines-task-lib/task'
+import * as azureDevOps from 'azure-devops-node-api'
 
 describe('getAlerts', () => {
     beforeEach(() => {
@@ -155,5 +157,129 @@ describe('checkAlertsForType', () => {
         const conn = { rest: { get: mockGet } }
         const result = await checkAlertsForType(conn as any, 'org', 'proj', 'repo', 1, 'feature', 'main')
         expect(result.newAlertsFound).toBe(false)
+    })
+
+    it('treats null target branch response as having no existing alerts', async () => {
+        const mockGet = vi.fn()
+            .mockResolvedValueOnce({ result: { count: 1, value: [{ alertId: 5, title: 'New Vuln' }] } })
+            .mockResolvedValueOnce(null)
+        const conn = { rest: { get: mockGet } }
+        const result = await checkAlertsForType(conn as any, 'org', 'proj', 'repo', 1, 'feature', 'main')
+        expect(result.newAlertsFound).toBe(true)
+        expect(result.message).toContain('New Vuln')
+    })
+})
+
+describe('getAlerts - URL construction', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('URL-encodes all spaces in project name', async () => {
+        const mockGet = vi.fn().mockResolvedValue({ result: { count: 0, value: [] } })
+        const conn = { rest: { get: mockGet } }
+        await getAlerts(conn as any, 'org', 'my project name', 'repo-id', 'main', 1)
+        expect(mockGet).toHaveBeenCalledWith(expect.stringContaining('my%20project%20name'))
+    })
+})
+
+describe('getSystemAccessToken (direct import)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('returns access token when scheme is OAuth', () => {
+        ;(tl.getEndpointAuthorization as any).mockReturnValue({
+            scheme: 'OAuth',
+            parameters: { AccessToken: 'test-token' },
+        })
+        expect(getSystemAccessToken()).toBe('test-token')
+        expect(tl.debug).toHaveBeenCalledWith('Got an OAuth authentication token')
+    })
+
+    it('calls warning and returns undefined when scheme is not OAuth', () => {
+        ;(tl.getEndpointAuthorization as any).mockReturnValue({
+            scheme: 'Basic',
+            parameters: {},
+        })
+        expect(getSystemAccessToken()).toBeUndefined()
+        expect(tl.warning).toHaveBeenCalledWith('Could not determine credentials to use')
+    })
+})
+
+describe('run() (direct import)', () => {
+    let mockRestGet: ReturnType<typeof vi.fn>
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockRestGet = vi.fn()
+        ;(azureDevOps.WebApi as any).mockImplementation(class {
+            rest = { get: mockRestGet }
+        })
+        ;(tl.getEndpointAuthorization as any).mockReturnValue({
+            scheme: 'OAuth',
+            parameters: { AccessToken: 'fake-token' },
+        })
+    })
+
+    function setupVars(overrides: Record<string, string | undefined> = {}) {
+        const vars: Record<string, string | undefined> = {
+            'Build.Reason': 'PullRequest',
+            'System.CollectionUri': 'https://dev.azure.com/myorg/',
+            'System.TeamFoundationCollectionUri': 'https://dev.azure.com/myorg/',
+            'System.TeamProject': 'MyProject',
+            'Build.Repository.ID': 'repo-123',
+            'System.PullRequest.SourceBranch': 'refs/heads/feature-branch',
+            'System.PullRequest.targetBranchName': 'main',
+            ...overrides,
+        }
+        ;(tl.getVariable as any).mockImplementation((name: string) => vars[name])
+    }
+
+    it('skips when build reason is not PullRequest', async () => {
+        ;(tl.getVariable as any).mockImplementation((name: string) => {
+            if (name === 'Build.Reason') return 'IndividualCI'
+            return undefined
+        })
+        await run()
+        expect(tl.setResult).toHaveBeenCalledWith(9, expect.stringContaining('Pull Request'))
+    })
+
+    it('skips when no scan options are selected', async () => {
+        setupVars()
+        ;(tl.getInput as any).mockReturnValue('false')
+        await run()
+        expect(tl.setResult).toHaveBeenCalledWith(9, expect.stringContaining('No options selected'))
+    })
+
+    it('succeeds when dependency scan finds no new alerts', async () => {
+        setupVars()
+        ;(tl.getInput as any).mockImplementation((name: string) => {
+            if (name === 'DepedencyAlertsScan') return 'true'
+            return 'false'
+        })
+        mockRestGet.mockResolvedValue({ result: { count: 0, value: [] } })
+        await run()
+        expect(tl.setResult).toHaveBeenCalledTimes(1)
+        expect(tl.setResult).toHaveBeenCalledWith(0)
+    })
+
+    it('fails when new dependency alerts are found', async () => {
+        setupVars()
+        ;(tl.getInput as any).mockImplementation((name: string) => {
+            if (name === 'DepedencyAlertsScan') return 'true'
+            return 'false'
+        })
+        mockRestGet
+            .mockResolvedValueOnce({ result: { count: 1, value: [{ alertId: 10, title: 'CVE-2024-1234' }] } })
+            .mockResolvedValueOnce({ result: { count: 0, value: [] } })
+        await run()
+        expect(tl.setResult).toHaveBeenCalledWith(2, expect.stringContaining('CVE-2024-1234'))
+    })
+
+    it('calls setResult(Failed) when an error is thrown', async () => {
+        ;(tl.getVariable as any).mockImplementation(() => { throw new Error('Unexpected failure') })
+        await run()
+        expect(tl.setResult).toHaveBeenCalledWith(2, expect.stringContaining('Unexpected failure'))
     })
 })
