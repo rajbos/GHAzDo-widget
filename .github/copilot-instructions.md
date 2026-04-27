@@ -38,6 +38,7 @@ Azure Pipelines task for automated PR dependency and code scanning checks.
 GitHub Actions workflows for continuous integration and deployment.
 
 - **`ci.yml`** - Runs on PRs to main branch, builds and validates the extension
+- **`release.yml`** - Triggered by `v*` tags; builds, publishes to marketplace, and creates a GitHub Release
 - **`handle-versioning-across-branches.yml`** - Manages semantic versioning across branches
 - **`dependency-review.yml`** - Dependency security scanning
 - **`scorecards.yml`** - OpenSSF scorecard security checks
@@ -106,11 +107,26 @@ The extension provides the following contributions to Azure DevOps:
 5. **Pipeline Task:**
    - "Advanced-Security-Review" task for automated security checks in pipelines
 
-### Publishing
+### Publishing / Creating a Release
 
-The extension is manually published to the Azure DevOps Marketplace:
-1. Package the extension using `npm run publish`
-2. Upload the `.vsix` file to https://marketplace.visualstudio.com/manage
+Releases are fully automated via the `release.yml` GitHub Actions workflow. To publish a new version to the Azure DevOps Marketplace:
+
+1. **Find the latest tag** to determine the next version:
+   ```bash
+   git tag --sort=-v:refname | head -5
+   ```
+2. **Create and push a new `v*` tag** on the commit you want to release (usually `HEAD` of `main`):
+   ```bash
+   git tag v0.0.1.XX <commit-sha>
+   git push origin v0.0.1.XX
+   ```
+3. **The `release.yml` workflow triggers automatically** and:
+   - Installs dependencies and builds the TypeScript pipeline task
+   - Packages the extension with `--rev-version` (auto-increments the patch revision in `vss-extension.json`)
+   - Publishes the `.vsix` to the Azure DevOps Marketplace using the `MARKETPLACE_TOKEN` secret
+   - Creates a GitHub Release with the `.vsix` attached and auto-generated release notes
+
+> **Note:** The `MARKETPLACE_TOKEN` secret must be configured in the repository settings with Marketplace (Acquire) and Marketplace (Publish) scopes.
 
 ## Development Workflow
 
@@ -118,7 +134,7 @@ The extension is manually published to the Azure DevOps Marketplace:
 2. Build locally using `npm run package`
 3. Test the extension in a development Azure DevOps environment
 4. CI runs on pull requests to validate builds
-5. After merge, package and manually publish to marketplace
+5. After merging to `main`, create and push a `v*` tag (e.g. `v0.0.1.26`) — the `release.yml` workflow publishes to the marketplace automatically
 
 ## Important Notes
 
