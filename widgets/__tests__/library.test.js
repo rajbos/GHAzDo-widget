@@ -938,3 +938,99 @@ describe('showAlertInfo', () => {
         expect(progressDiv.dependencyAlertCount.textContent).toBe('5')
     })
 })
+
+describe('getSavedDocument', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('returns the document when found', async () => {
+        const mockDoc = { id: 'doc1', lastUpdated: new Date().toISOString(), data: {} }
+        const mockDataService = { getDocument: vi.fn().mockResolvedValue(mockDoc) }
+        lib.VSS.getService.mockResolvedValue(mockDataService)
+
+        const result = await lib.getSavedDocument(lib.VSS, 'myCollection', 'doc1')
+
+        expect(result).toEqual(mockDoc)
+        expect(mockDataService.getDocument).toHaveBeenCalledWith('myCollection', 'doc1')
+    })
+
+    it('returns null when document fetch throws', async () => {
+        const mockDataService = { getDocument: vi.fn().mockRejectedValue(new Error('not found')) }
+        lib.VSS.getService.mockResolvedValue(mockDataService)
+
+        const result = await lib.getSavedDocument(lib.VSS, 'myCollection', 'missing')
+
+        expect(result).toBeNull()
+    })
+})
+
+describe('saveDocument', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('calls setDocument with correct structure', async () => {
+        const mockSavedDoc = { id: 'doc1' }
+        const mockDataService = { setDocument: vi.fn().mockResolvedValue(mockSavedDoc) }
+        lib.VSS.getService.mockResolvedValue(mockDataService)
+
+        await lib.saveDocument(lib.VSS, 'myCollection', 'doc1', { key: 'value' })
+
+        expect(mockDataService.setDocument).toHaveBeenCalledWith(
+            'myCollection',
+            expect.objectContaining({ id: 'doc1', data: { key: 'value' }, __eTag: -1 })
+        )
+    })
+
+    it('handles setDocument error gracefully', async () => {
+        const mockDataService = { setDocument: vi.fn().mockRejectedValue(new Error('save failed')) }
+        lib.VSS.getService.mockResolvedValue(mockDataService)
+
+        await lib.saveDocument(lib.VSS, 'myCollection', 'doc1', {})
+        expect(lib.console.log).toHaveBeenCalledWith(expect.stringContaining('Error saving'))
+    })
+})
+
+describe('removeDocument', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('calls deleteDocument with correct arguments', async () => {
+        const mockDataService = { deleteDocument: vi.fn().mockResolvedValue(undefined) }
+        lib.VSS.getService.mockResolvedValue(mockDataService)
+
+        await lib.removeDocument(lib.VSS, 'myCollection', 'doc1')
+
+        expect(mockDataService.deleteDocument).toHaveBeenCalledWith('myCollection', 'doc1')
+    })
+
+    it('handles deleteDocument error gracefully', async () => {
+        const mockDataService = { deleteDocument: vi.fn().mockRejectedValue(new Error('delete failed')) }
+        lib.VSS.getService.mockResolvedValue(mockDataService)
+
+        await lib.removeDocument(lib.VSS, 'myCollection', 'doc1')
+        expect(lib.console.log).toHaveBeenCalledWith(expect.stringContaining('Error deleting'))
+    })
+})
+
+describe('getAlertsTrendLine - default filter', () => {
+    let lib
+
+    beforeEach(() => {
+        lib = loadLibrary()
+    })
+
+    it('falls through to open-alert behaviour for unknown filter values', () => {
+        const alerts = [{ alertType: 'dependency', firstSeenDate: '2020-01-01T00:00:00Z' }]
+        const result = lib.getAlertsTrendLine(alerts, 'dependency', 1, 1, 'unknown-filter')
+        expect(result[result.length - 1]).toBe(1)
+    })
+})

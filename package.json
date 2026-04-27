@@ -8,6 +8,7 @@
   },
   "scripts": {
     "install-tfx": "npm install",
-    "test": "cd widgets && npx vitest run && cd ../dependencyReviewTask && npx vitest run"
+    "test": "npm --prefix widgets test && npm --prefix dependencyReviewTask test",
+    "coverage": "npm --prefix widgets run coverage && npm --prefix dependencyReviewTask run coverage"
   }
 }

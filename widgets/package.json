@@ -5,11 +5,13 @@
     "package": "tfx extension create --manifest-globs vss-extension-dev.json --rev-version",
     "publish": "tfx extension create",
     "publish-explain": "go to https://marketplace.visualstudio.com/manage and publish manually",
-    "test": "vitest run"
+    "test": "vitest run",
+    "coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@types/node": "^25",
     "@types/q": "^1.5.8",
+    "@vitest/coverage-v8": "^4.1.5",
     "install": "^0.13.0",
     "npm": "^11.12.1",
     "tfx-cli": "^0.23.1",

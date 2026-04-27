@@ -41,7 +41,7 @@ export async function getAlerts(
     }
 
     // Filter for open alerts only (states=1) to exclude closed/dismissed/fixed alerts
-    const branchUrl = `https://advsec.dev.azure.com/${orgSlug}/${project.replace(" ", "%20")}/_apis/alert/repositories/${repository}/alerts?criteria.alertType=${alertType}&criteria.ref=${branchName}&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&useDatabaseProvider=true`
+    const branchUrl = `https://advsec.dev.azure.com/${orgSlug}/${project.replace(/ /g, '%20')}/_apis/alert/repositories/${repository}/alerts?criteria.alertType=${alertType}&criteria.ref=${branchName}&criteria.onlyDefaultBranchAlerts=true&criteria.states=1&useDatabaseProvider=true`
     tl.debug(`Calling api with url: [${branchUrl}]`)
 
     let branchResponse: IResponse
@@ -168,8 +168,8 @@ export async function checkAlertsForType(
 
         // first get the only the alertid's from the source branch
         const sourceAlertIds = sourceBranchResponse.result.value.map((alert) => {return alert.alertId;})
-        // do the same for the target branch
-        const targetAlertIds = targetBranchResponse.result.value.map((alert) => {return alert.alertId;})
+        // do the same for the target branch, defaulting to empty if the branch has no data yet
+        const targetAlertIds = targetBranchResponse?.result?.value?.map((alert) => {return alert.alertId;}) ?? []
         // now find the delta
         const newAlertIds = sourceAlertIds.filter((alertId) => {
             return !targetAlertIds.includes(alertId)

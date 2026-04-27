@@ -1,7 +1,10 @@
 {
     "scripts": {
         "build": "npm install && tsc -p .",
-        "test": "vitest run"
+        "test": "vitest run",
+        "pretest": "tsc -p .",
+        "coverage": "vitest run --coverage",
+        "precoverage": "tsc -p ."
     },
     "dependencies": {
         "azure-devops-node-api": "^15.1.2",
@@ -10,6 +13,7 @@
     "devDependencies": {
         "@types/node": "^25",
         "@types/q": "^1.5.6",
+        "@vitest/coverage-v8": "^4.1.5",
         "typescript": "^6.0.2",
         "vitest": "^4.1.4"
     }
