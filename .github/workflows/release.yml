@@ -29,12 +29,12 @@ jobs:
         run: npm ci
 
       - name: Install widget dependencies
-        run: npm install
+        run: npm ci
         working-directory: widgets
 
       - name: Build pipeline task
         run: |
-          npm install --ignore-scripts
+          npm ci --ignore-scripts
           npx tsc -p .
           npm prune --omit=dev
         working-directory: dependencyReviewTask
