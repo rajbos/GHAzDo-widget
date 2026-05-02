@@ -8,7 +8,7 @@
     },
     "dependencies": {
         "azure-devops-node-api": "^15.1.2",
-        "azure-pipelines-task-lib": "^5.2.8"
+        "azure-pipelines-task-lib": "^5.2.10"
     },
     "devDependencies": {
         "@types/node": "^25",
