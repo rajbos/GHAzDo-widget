@@ -6,6 +6,9 @@
         "coverage": "vitest run --coverage",
         "precoverage": "tsc -p ."
     },
+    "overrides": {
+        "uuid": "^14.0.0"
+    },
     "dependencies": {
         "azure-devops-node-api": "^15.1.2",
         "azure-pipelines-task-lib": "^5.2.10"

@@ -6,6 +6,9 @@
   "devDependencies": {
     "tfx-cli": "^0.23.1"
   },
+  "overrides": {
+    "uuid": "^14.0.0"
+  },
   "scripts": {
     "install-tfx": "npm install",
     "test": "npm --prefix widgets test && npm --prefix dependencyReviewTask test",
