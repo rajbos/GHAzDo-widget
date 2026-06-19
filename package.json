@@ -7,7 +7,8 @@
     "tfx-cli": "^0.23.1"
   },
   "overrides": {
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.0",
+    "tunnel": "^0.0.7"
   },
   "scripts": {
     "install-tfx": "npm install",
