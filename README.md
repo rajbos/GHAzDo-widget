@@ -49,7 +49,7 @@ The workflow will pick up the version from `vss-extension.json` and publish the 
 
 ### Prerequisites (one-time setup)
 
-Add a `MARKETPLACE_TOKEN` secret to this repository containing an Azure DevOps PAT with the **`Marketplace (publish)`** scope.  
+Add a `MARKETPLACE_TOKEN` secret to this repository containing an Azure DevOps PAT with the **`Marketplace (Acquire)`** and **`Marketplace (Publish)`** scopes.  
 Create a PAT at: https://dev.azure.com/_usersSettings/tokens
 
 ## How to build the package locally

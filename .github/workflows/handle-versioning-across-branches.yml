@@ -44,7 +44,7 @@ jobs:
         id: get-version
         shell: pwsh
         env:
-          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT}}
+          AZURE_DEVOPS_PAT: ${{ secrets.MARKETPLACE_TOKEN }}
         run: |
           # get the last updated version for this extension from the server
           $vsix = "vss-extension-dev.json"

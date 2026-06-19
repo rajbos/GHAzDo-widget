@@ -272,9 +272,9 @@ function Build {
     )
     Write-Host "Building the [$buildtype] version"
 
-    # check if $env:AZURE_DEVOPS_PAT has a value (only needed when publishing)
-    if (-not $skipPublish -and $null -eq $env:AZURE_DEVOPS_PAT) {
-        Write-Host "Environment variable AZURE_DEVOPS_PAT is not set. Please set it to a valid PAT with BOTH scopes:"
+    # check if $env:MARKETPLACE_TOKEN has a value (only needed when publishing)
+    if (-not $skipPublish -and $null -eq $env:MARKETPLACE_TOKEN) {
+        Write-Host "Environment variable MARKETPLACE_TOKEN is not set. Please set it to a valid PAT with BOTH scopes:"
         Write-Host "  - Marketplace (Acquire) - needed to read extension info"
         Write-Host "  - Marketplace (Publish) - needed to publish extension"
         Write-Host "Create a PAT at: https://dev.azure.com/_usersSettings/tokens"
@@ -299,7 +299,7 @@ function Build {
     # get the last updated version for this extension from the server to make sure we are rolling forward
     if (-not $skipPublish) {
         try {
-            $output = $(npx tfx extension show --token $env:AZURE_DEVOPS_PAT --vsix $vsix --publisher "RobBos" --extension-id $extensionId --output json | ConvertFrom-Json)
+            $output = $(npx tfx extension show --token $env:MARKETPLACE_TOKEN --vsix $vsix --publisher "RobBos" --extension-id $extensionId --output json | ConvertFrom-Json)
             $lastVersion = ($output.versions | Sort-Object -Property lastUpdated -Descending)[0]
             Write-Host "Last version: [$($lastVersion.version)] from server"
             # overwrite the version in the json file
@@ -310,7 +310,7 @@ function Build {
         }
         catch {
             Write-Host "Error loading the version from Azure DevOps Marketplace"
-            Write-Host "Check that AZURE_DEVOPS_PAT has BOTH scopes:"
+            Write-Host "Check that MARKETPLACE_TOKEN has BOTH scopes:"
             Write-Host "  - Marketplace (Acquire) - needed to read extension info"
             Write-Host "  - Marketplace (Publish) - needed to publish extension"
             Write-Host "Create a PAT at: https://dev.azure.com/_usersSettings/tokens"
@@ -366,7 +366,7 @@ function Build {
 
     if (-not $skipPublish) {
         Write-Host "Publishing [$visx]"
-        npx tfx extension publish --vsix $visx --service-url https://marketplace.visualstudio.com --token "$($env:AZURE_DEVOPS_PAT)"
+        npx tfx extension publish --vsix $visx --service-url https://marketplace.visualstudio.com --token "$($env:MARKETPLACE_TOKEN)"
     }
     else {
         Write-Host "Skipping publish (skipPublish flag set). Packaged: [$visx]"
