@@ -16,7 +16,7 @@
     "@types/q": "^1.5.8",
     "@vitest/coverage-v8": "^4.1.7",
     "install": "^0.13.0",
-    "npm": "^11.16.0",
+    "npm": "^11.17.0",
     "tfx-cli": "^0.23.1",
     "vitest": "^4.1.7",
     "vss-web-extension-sdk": "^5.141.0"
