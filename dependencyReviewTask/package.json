@@ -7,7 +7,10 @@
         "precoverage": "tsc -p ."
     },
     "overrides": {
-        "uuid": "^14.0.0"
+        "uuid": "^14.0.0",
+        "tunnel": "^0.0.7",
+        "semver": "^7.5.4",
+        "q": "^1.5.2"
     },
     "dependencies": {
         "azure-devops-node-api": "^15.1.2",
