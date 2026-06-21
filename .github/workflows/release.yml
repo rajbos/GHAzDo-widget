@@ -70,6 +70,19 @@ jobs:
       - name: Print published VSIX
         run: echo "Published ${{ steps.publish.outputs.vsix-file-name }}"
 
+      - name: Add release info to step summary
+        run: |
+          VERSION=$(node -p "require('./vss-extension.json').version")
+          VSIX="${{ steps.publish.outputs.vsix-file-name }}"
+          MARKETPLACE_URL="https://marketplace.visualstudio.com/items?itemName=RobBos.GHAzDoWidget"
+          echo "### Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** "`$VERSION`"" >> $GITHUB_STEP_SUMMARY
+          echo "**VSIX File:** "`$VSIX`"" >> $GITHUB_STEP_SUMMARY
+          echo "**Marketplace:** [$MARKETPLACE_URL]($MARKETPLACE_URL)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The extension has been published to the Azure DevOps Marketplace." >> $GITHUB_STEP_SUMMARY
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
