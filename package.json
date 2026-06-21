@@ -8,9 +8,8 @@
   },
   "overrides": {
     "uuid": "^14.0.0",
-    "tunnel": "^0.0.7",
     "semver": "^7.5.4",
-    "q": "^1.5.2"
+    "q": "1.5.1"
   },
   "scripts": {
     "install-tfx": "npm install",
