@@ -9,7 +9,8 @@
   "overrides": {
     "uuid": "^14.0.0",
     "semver": "^7.5.4",
-    "q": "1.5.1"
+    "q": "1.5.1",
+    "lodash": "^4.18.1"
   },
   "scripts": {
     "install-tfx": "npm install",
