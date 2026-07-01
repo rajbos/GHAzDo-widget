@@ -16,7 +16,7 @@
     "undici": "^6.27.0"
   },
   "devDependencies": {
-    "@types/node": "^25",
+    "@types/node": "^26",
     "@types/q": "^1.5.8",
     "@vitest/coverage-v8": "^4.1.7",
     "install": "^0.13.0",
