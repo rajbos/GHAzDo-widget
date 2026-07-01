@@ -16,7 +16,7 @@
         "azure-pipelines-task-lib": "^5.2.10"
     },
     "devDependencies": {
-        "@types/node": "^25",
+        "@types/node": "^26",
         "@types/q": "^1.5.6",
         "@vitest/coverage-v8": "^4.1.7",
         "typescript": "^6.0.3",
