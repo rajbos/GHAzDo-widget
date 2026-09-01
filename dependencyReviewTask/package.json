@@ -12,7 +12,7 @@
         "q": "1.5.1"
     },
     "dependencies": {
-        "azure-devops-node-api": "^15.1.2",
+        "azure-devops-node-api": "^17.0.0",
         "azure-pipelines-task-lib": "^5.278.0"
     },
     "devDependencies": {
