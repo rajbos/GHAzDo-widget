@@ -40,6 +40,19 @@ updates:
     labels:
       - 'dependencies'
       - 'npm'
+    groups:
+      # vitest and its plugins pin each other as peer dependencies, so they
+      # must be bumped together (including major versions) or npm ci fails
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+      all-in-one:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
   
   # Enable version updates for dependency review task npm packages
   - package-ecosystem: 'npm'
